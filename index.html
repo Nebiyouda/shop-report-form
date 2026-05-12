@@ -169,6 +169,17 @@
 
     .upload-card.has-image .upload-actions { display: flex; }
 
+    .upload-start-actions {
+      position: relative;
+      z-index: 4;
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .upload-card.has-image .upload-start-actions { display: none; }
+
     .mini-btn {
       border: 1px solid rgba(255,255,255,.8);
       background: rgba(0,0,0,.62);
@@ -785,11 +796,16 @@
             <div class="control-label">${slot.label}</div>
             <label class="upload-card" data-upload="${slot.key}">
               <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" />
+              <input class="sr-only" type="file" accept="image/*" capture="environment" data-capture="${slot.key}" />
               <span class="upload-empty px-3 text-center text-sm font-black text-green-900">
                 Drop image here<br><span class="text-xs font-bold">or browse</span>
+                <span class="upload-start-actions">
+                  <button class="mini-btn" data-camera="${slot.key}" type="button">Camera</button>
+                </span>
               </span>
               <div class="upload-actions">
                 <button class="mini-btn" data-replace="${slot.key}" type="button">Replace</button>
+                <button class="mini-btn" data-camera="${slot.key}" type="button">Camera</button>
                 <button class="mini-btn" data-rotate="${slot.key}" type="button">Rotate</button>
                 <button class="mini-btn" data-remove="${slot.key}" type="button">Remove</button>
               </div>
@@ -799,7 +815,8 @@
 
         this.uploadGrid.querySelectorAll("[data-upload]").forEach(card => {
           const key = card.dataset.upload;
-          const input = card.querySelector("input");
+          const input = card.querySelector("input:not([data-capture])");
+          const captureInput = card.querySelector("[data-capture]");
 
           card.addEventListener("dragover", event => {
             event.preventDefault();
@@ -820,12 +837,19 @@
             if (file) this.readPhoto(key, file);
             input.value = "";
           });
+
+          captureInput.addEventListener("change", event => {
+            const file = event.target.files?.[0];
+            if (file) this.readPhoto(key, file);
+            captureInput.value = "";
+          });
         });
 
         this.uploadGrid.addEventListener("click", event => {
           const removeKey = event.target.dataset.remove;
           const replaceKey = event.target.dataset.replace;
           const rotateKey = event.target.dataset.rotate;
+          const cameraKey = event.target.dataset.camera;
           if (removeKey) {
             event.preventDefault();
             this.state.photos[removeKey] = "";
@@ -834,11 +858,15 @@
           }
           if (replaceKey) {
             event.preventDefault();
-            this.uploadGrid.querySelector(`[data-upload="${replaceKey}"] input`).click();
+            this.uploadGrid.querySelector(`[data-upload="${replaceKey}"] input:not([data-capture])`).click();
           }
           if (rotateKey) {
             event.preventDefault();
             this.rotateMainPhoto(rotateKey);
+          }
+          if (cameraKey) {
+            event.preventDefault();
+            this.uploadGrid.querySelector(`[data-upload="${cameraKey}"] [data-capture]`).click();
           }
         });
       }
@@ -866,9 +894,11 @@
 
         this.extraPhotoList.addEventListener("change", event => {
           const uploadId = event.target.dataset.extraFile;
-          if (!uploadId) return;
+          const cameraUploadId = event.target.dataset.extraCameraFile;
+          const targetId = uploadId || cameraUploadId;
+          if (!targetId) return;
           const file = event.target.files?.[0];
-          if (file) this.readExtraPhoto(uploadId, file);
+          if (file) this.readExtraPhoto(targetId, file);
           event.target.value = "";
         });
 
@@ -877,6 +907,7 @@
           const clearId = event.target.dataset.extraClear;
           const replaceId = event.target.dataset.extraReplace;
           const rotateId = event.target.dataset.extraRotate;
+          const cameraId = event.target.dataset.extraCamera;
 
           if (removeId) {
             event.preventDefault();
@@ -903,6 +934,11 @@
           if (rotateId) {
             event.preventDefault();
             this.rotateExtraPhoto(rotateId);
+          }
+
+          if (cameraId) {
+            event.preventDefault();
+            this.extraPhotoList.querySelector(`[data-extra-camera-file="${cameraId}"]`).click();
           }
         });
 
@@ -1086,12 +1122,17 @@
             </div>
             <label class="upload-card ${item.image ? "has-image" : ""}" data-extra-drop="${item.id}">
               <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" data-extra-file="${item.id}" />
+              <input class="sr-only" type="file" accept="image/*" capture="environment" data-extra-camera-file="${item.id}" />
               ${item.image ? `<img src="${item.image}" alt="${Formatters.escapeHtml(item.title)}">` : ""}
               <span class="upload-empty px-3 text-center text-sm font-black text-green-900" style="${item.image ? "display:none" : ""}">
                 Drop image here<br><span class="text-xs font-bold">or browse</span>
+                <span class="upload-start-actions">
+                  <button class="mini-btn" data-extra-camera="${item.id}" type="button">Camera</button>
+                </span>
               </span>
               <div class="upload-actions">
                 <button class="mini-btn" data-extra-replace="${item.id}" type="button">Replace</button>
+                <button class="mini-btn" data-extra-camera="${item.id}" type="button">Camera</button>
                 <button class="mini-btn" data-extra-rotate="${item.id}" type="button">Rotate</button>
                 <button class="mini-btn" data-extra-clear="${item.id}" type="button">Remove Image</button>
               </div>
