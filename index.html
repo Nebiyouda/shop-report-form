@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cabin-Safety Workshop Inspection & Findings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            aviation: "#29496d",
+            reportGreen: "#a9c9ac",
+            reportBorder: "#6b9f72",
+            paper: "#f4f4f1"
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /*
+      Place the actual Emirates font file beside this HTML using one of these
+      names and the whole app will use it automatically.
+    */
+    @font-face {
+      font-family: "Emirates";
+      src:
+        local("Emirates"),
+        local("Emirates Regular"),
+        local("Emirates Medium"),
+        local("Emirates Bold"),
+        url("./Emirates.woff2") format("woff2"),
+        url("./Emirates.woff") format("woff"),
+        url("./Emirates.ttf") format("truetype"),
+        url("./Emirates-Regular.woff2") format("woff2"),
+        url("./Emirates-Regular.woff") format("woff"),
+        url("./Emirates-Regular.ttf") format("truetype");
+      font-weight: 400 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --blue: #29496d;
+      --green: #a9c9ac;
+      --green-dark: #6b9f72;
+      --paper: #f4f4f1;
+      --ink: #080808;
+      --ui-bg: #eef2f4;
+      --emirates-font: "Emirates", "Emirates Regular", "Arial Rounded MT Bold", Arial, sans-serif;
+      --report-font: var(--emirates-font);
+      --ui-font: var(--emirates-font);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: var(--emirates-font) !important;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      font-family: var(--emirates-font) !important;
+    }
+
+    body {
+      font-family: var(--ui-font);
+      background:
+        linear-gradient(135deg, rgba(0, 48, 135, .08), transparent 34%),
+        linear-gradient(315deg, rgba(107, 159, 114, .16), transparent 38%),
+        var(--ui-bg);
+    }
+
+    .dark body, .dark {
+      color-scheme: dark;
+    }
+
+    .control-label {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #334155;
+    }
+
+    .dark .control-label { color: #cbd5e1; }
+
+    .input {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      background: white;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font: 600 15px/1.25 var(--ui-font);
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0, 48, 135, .15);
+    }
+
+    .dark .input {
+      background: #111827;
+      color: #f8fafc;
+      border-color: #334155;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 6px;
+      padding: 11px 14px;
+      font: 800 14px/1 var(--ui-font);
+      border: 1px solid transparent;
+      transition: transform .12s ease, filter .12s ease, background .12s ease;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-secondary { background: white; border-color: #cbd5e1; color: #0f172a; }
+    .btn-danger { background: #991b1b; color: white; }
+    .dark .btn-secondary { background: #111827; color: #f8fafc; border-color: #334155; }
+
+    .upload-card {
+      border: 2px dashed var(--green-dark);
+      min-height: 172px;
+      background: rgba(169, 201, 172, .18);
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .upload-card.drag-over {
+      background: rgba(169, 201, 172, .45);
+      outline: 3px solid rgba(0, 48, 135, .18);
+    }
+
+    .upload-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,.74);
+    }
+
+    .upload-actions {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      display: none;
+      gap: 6px;
+      z-index: 5;
+    }
+
+    .upload-card.has-image .upload-actions { display: flex; }
+
+    .mini-btn {
+      border: 1px solid rgba(255,255,255,.8);
+      background: rgba(0,0,0,.62);
+      color: white;
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .login-page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        linear-gradient(135deg, rgba(41, 73, 109, .95), rgba(15, 23, 42, .9)),
+        radial-gradient(circle at 18% 18%, rgba(169, 201, 172, .42), transparent 32%);
+    }
+
+    .logo-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 178px;
+      border: 3px solid var(--green);
+      background: white;
+      color: var(--blue);
+      padding: 12px 18px;
+      font: 900 34px/1 var(--ui-font);
+      letter-spacing: .04em;
+    }
+
+    .report-sheet {
+      width: 794px;
+      min-height: 1123px;
+      margin: 0 auto;
+      padding: 29px 30px 22px;
+      background:
+        radial-gradient(circle at 18% 4%, rgba(255,255,255,.95), transparent 18%),
+        linear-gradient(115deg, rgba(0,0,0,.028), transparent 22%, rgba(0,0,0,.035) 100%),
+        var(--paper);
+      color: var(--ink);
+      font-family: var(--report-font);
+      box-shadow: 0 22px 60px rgba(15, 23, 42, .24);
+      transform-origin: top center;
+    }
+
+    .report-header {
+      display: grid;
+      grid-template-columns: 1.86fr 1fr;
+      gap: 0;
+      min-height: 210px;
+    }
+
+    .report-title-block {
+      background: var(--blue);
+      color: white;
+      padding: 36px 26px 22px;
+      display: flex;
+      align-items: center;
+      border: 2px solid var(--blue);
+    }
+
+    .report-title-block h1 {
+      font: 900 48px/1.12 var(--report-font);
+      letter-spacing: 0;
+    }
+
+    .note-box {
+      border: 2px solid var(--green-dark);
+      background: rgba(255,255,255,.32);
+      padding: 8px 10px;
+      color: #050505;
+    }
+
+    .note-box h2 {
+      font: 900 28px/1.05 var(--report-font);
+      margin-bottom: 6px;
+    }
+
+    .note-box ol {
+      list-style-position: outside;
+      padding-left: 20px;
+      font: 400 15px/1.16 var(--report-font);
+    }
+
+    .report-section-title {
+      background: var(--green);
+      border: 2px solid var(--green-dark);
+      color: #050505;
+      text-align: center;
+      font: 900 24px/1.2 var(--report-font);
+      padding: 9px 10px;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+
+    .report-table {
+      display: grid;
+      grid-template-columns: 1.08fr 1.34fr .98fr 1.17fr;
+      border-left: 2px solid var(--green-dark);
+      border-top: 0;
+    }
+
+    .report-cell {
+      min-height: 45px;
+      border-right: 2px solid var(--green-dark);
+      border-bottom: 2px solid var(--green-dark);
+      display: flex;
+      align-items: center;
+      padding: 5px 8px;
+      background: rgba(255,255,255,.24);
+      overflow-wrap: anywhere;
+    }
+
+    .report-label {
+      background: rgba(169, 201, 172, .26);
+      font: 900 22px/1.05 var(--report-font);
+    }
+
+    .report-value {
+      font: 400 22px/1.05 var(--report-font);
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .photo-frame {
+      height: 366px;
+      border: 2px solid var(--green-dark);
+      background: rgba(255,255,255,.28);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: rgba(255,255,255,.58);
+    }
+
+    .extra-photo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .extra-photo-item {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .extra-photo-title {
+      background: var(--green);
+      border: 2px solid var(--green-dark);
+      border-bottom: 0;
+      text-align: center;
+      font: 900 20px/1.2 var(--report-font);
+      padding: 6px;
+      text-transform: uppercase;
+    }
+
+    .extra-photo-frame {
+      min-height: 245px;
+      border: 2px solid var(--green-dark);
+      background: rgba(255,255,255,.28);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .extra-photo-frame img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      display: block;
+      background: rgba(255,255,255,.58);
+    }
+
+    .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      text-align: center;
+      color: #315f36;
+      font: 900 22px/1.1 var(--report-font);
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(169, 201, 172, .18),
+        rgba(169, 201, 172, .18) 12px,
+        rgba(255,255,255,.3) 12px,
+        rgba(255,255,255,.3) 24px
+      );
+    }
+
+    .remarks {
+      margin-top: 16px;
+      border-left: 2px solid var(--green-dark);
+      border-right: 2px solid var(--green-dark);
+      border-bottom: 2px solid var(--green-dark);
+    }
+
+    .remarks-title {
+      background: var(--green);
+      border-top: 2px solid var(--green-dark);
+      border-bottom: 2px solid var(--green-dark);
+      text-align: center;
+      font: 900 24px/1.2 var(--report-font);
+      padding: 8px;
+    }
+
+    .remarks-body {
+      min-height: 112px;
+      padding: 15px 8px 0 28px;
+      background: rgba(255,255,255,.25);
+      font: 400 22px/1.42 var(--report-font);
+      white-space: pre-wrap;
+    }
+
+    .pdf-footer {
+      margin-top: 12px;
+      text-align: center;
+      color: #384b3b;
+      font: 700 10px/1.2 var(--ui-font);
+      opacity: .78;
+    }
+
+    .preview-shell {
+      overflow: auto;
+      max-height: calc(100vh - 96px);
+      padding: 22px;
+      background: #dbe3e8;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
+
+    .dark .preview-shell {
+      background: #0f172a;
+      border-color: #334155;
+    }
+
+    #pdfModal[aria-hidden="false"] { display: flex; }
+
+    @media (max-width: 1260px) {
+      .report-sheet.preview-scale { transform: scale(.78); margin-bottom: -238px; }
+    }
+
+    @media (max-width: 980px) {
+      .report-sheet.preview-scale { transform: scale(.62); margin-bottom: -426px; }
+    }
+
+    @media (max-width: 760px) {
+      .report-sheet {
+        width: 794px;
+      }
+      .report-sheet.preview-scale {
+        transform: scale(.45);
+        margin-left: -218px;
+        margin-bottom: -618px;
+      }
+      .preview-shell {
+        padding: 12px;
+      }
+    }
+
+    @media print {
+      .extra-photo-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media print {
+      body { background: white; }
+      .app-ui { display: none !important; }
+      .print-only { display: block !important; }
+      .report-sheet {
+        box-shadow: none;
+        width: 210mm;
+        min-height: 297mm;
+        padding: 7.7mm 8mm 5mm;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+  <section id="loginPage" class="login-page">
+    <form id="loginForm" class="w-full max-w-sm rounded-lg border border-white/20 bg-white p-6 shadow-2xl dark:bg-slate-900">
+      <div class="mb-6 text-center">
+        <div class="logo-mark">ENG360</div>
+        <h1 class="mt-5 text-xl font-black text-slate-950 dark:text-white">Shop Report Login</h1>
+      </div>
+      <div class="space-y-4">
+        <label class="block space-y-1">
+          <span class="control-label">User Name</span>
+          <input id="loginUsername" class="input" autocomplete="username" required />
+        </label>
+        <label class="block space-y-1">
+          <span class="control-label">Password</span>
+          <input id="loginPassword" class="input" type="password" autocomplete="current-password" required />
+        </label>
+        <p id="loginError" class="hidden text-sm font-bold text-red-700 dark:text-red-300">Invalid user name or password.</p>
+        <button class="btn btn-primary w-full" type="submit">Login</button>
+      </div>
+    </form>
+  </section>
+
+  <main id="appShell" class="app-ui mx-auto hidden max-w-[1720px] px-4 py-5 lg:px-6">
+    <header class="mb-5 flex flex-col gap-3 border-b border-slate-300 pb-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-black text-slate-950 dark:text-white">Cabin-Safety Shop Report Builder</h1>
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Editable aviation workshop finding form with live A4 print preview.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="logoutBtn" class="btn btn-secondary" type="button">Logout</button>
+        <button id="themeToggle" class="btn btn-secondary" type="button" title="Toggle dark mode">Dark Mode</button>
+        <button id="previewPdfBtn" class="btn btn-secondary" type="button">Preview PDF</button>
+        <button id="exportPdfBtn" class="btn btn-primary" type="button">Export to PDF</button>
+      </div>
+    </header>
+
+    <section class="grid gap-5 xl:grid-cols-[minmax(430px,560px)_1fr]">
+      <form id="reportForm" class="space-y-5 rounded-lg border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div class="border-2 border-reportBorder bg-reportGreen px-3 py-2 text-center font-black uppercase text-slate-950">
+          SHOP INSPECTION &amp; FINDINGS
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="space-y-1 sm:col-span-2">
+            <span class="control-label">Finding Title</span>
+            <input class="input" data-field="title" value="LEAK ON THE CYLINDER NECK" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Date of Inspection</span>
+            <input class="input" data-field="date" type="date" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Time</span>
+            <input class="input" data-field="time" type="time" value="04:00" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Staff Name</span>
+            <input class="input" data-field="staffName" value="NEBIYOU DESALEGN" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Staff No</span>
+            <input class="input" data-field="staffNo" value="S492178" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Role</span>
+            <select class="input" data-field="role">
+              <option>MECHANIC</option>
+              <option>LICENCED TECHNICIAN</option>
+              <option>SUPERVISOR</option>
+              <option>SHOP ENGINEER</option>
+            </select>
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Aircraft Type</span>
+            <input class="input" data-field="aircraftType" value="B777" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Registration</span>
+            <input class="input" data-field="registration" value="A6ECO" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Component PKG</span>
+            <input class="input" data-field="componentPkg" value="OXYGEN CYLINDER" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Part Number</span>
+            <input class="input" data-field="partNumber" value="804044-15" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Serial Number</span>
+            <input class="input" data-field="serialNumber" value="C24020041" />
+          </label>
+          <label class="space-y-1">
+            <span class="control-label">Vendor / Manufacturer</span>
+            <input class="input" data-field="vendor" value="AVOX SYSTEMS" />
+          </label>
+          <label class="space-y-1 sm:col-span-2">
+            <span class="control-label">Reason for Removal</span>
+            <input class="input" data-field="reason" value="Leak on cylinder neck during pressure test" />
+          </label>
+        </div>
+
+        <section>
+          <div class="mb-2 flex items-center justify-between">
+            <h2 class="text-sm font-black uppercase tracking-wide text-slate-700 dark:text-slate-200">Photo Uploads</h2>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">JPG, PNG, WEBP</span>
+          </div>
+          <div id="uploadGrid" class="grid gap-3 sm:grid-cols-3"></div>
+          <div class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <h3 class="text-sm font-black uppercase tracking-wide text-slate-700 dark:text-slate-200">Additional Pictures</h3>
+              <button id="addExtraPhotoBtn" class="btn btn-secondary" type="button">Add Picture + Title</button>
+            </div>
+            <div id="extraPhotoList" class="space-y-3"></div>
+          </div>
+        </section>
+
+        <label class="block space-y-1">
+          <span class="control-label">Originator Remarks / Summary</span>
+          <textarea class="input min-h-[130px] resize-y" data-field="remarks">• Oxygen cylinder found leaking at neck during pressure test.
+• White foam observed — confirmed low pressure fault.
+• Component declared unserviceable and routed to vendor for repair.</textarea>
+        </label>
+
+        <div class="flex flex-wrap gap-2 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <button class="btn btn-primary" type="button" id="saveDraftBtn">Save Draft</button>
+          <button class="btn btn-secondary" type="button" id="loadDraftBtn">Load Draft</button>
+          <button class="btn btn-danger" type="button" id="resetBtn">Reset Form</button>
+        </div>
+      </form>
+
+      <aside class="min-w-0">
+        <div class="mb-2 flex items-center justify-between">
+          <h2 class="text-sm font-black uppercase tracking-wide text-slate-700 dark:text-slate-200">Live A4 Preview</h2>
+          <span id="statusText" class="text-xs font-bold text-slate-500 dark:text-slate-400">Ready</span>
+        </div>
+        <div class="preview-shell">
+          <div id="reportPreview" class="report-sheet preview-scale"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="pdfModal" aria-hidden="true" class="fixed inset-0 z-50 hidden items-start justify-center overflow-auto bg-black/70 p-4">
+    <div class="w-full max-w-5xl">
+      <div class="sticky top-0 z-10 mb-3 flex justify-end gap-2">
+        <button id="modalExportBtn" class="btn btn-primary" type="button">Export to PDF</button>
+        <button id="closeModalBtn" class="btn btn-secondary" type="button">Close</button>
+      </div>
+      <div id="modalPreview" class="mx-auto"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    const AppConfig = {
+      storageKey: "cabinSafetyShopReportDraft.v1",
+      sessionKey: "eng360ShopReportSession.v1",
+      credentials: {
+        username: "S492178",
+        password: "492178"
+      },
+      photoSlots: [
+        { key: "unserviceableLabel", label: "Unserviceable Label" },
+        { key: "cylinderPicture", label: "Cylinder Picture" },
+        { key: "manufacturerLabel", label: "Manufacturer Label" }
+      ],
+      defaults: {
+        title: "LEAK ON THE CYLINDER NECK",
+        date: new Date().toISOString().slice(0, 10),
+        time: "04:00",
+        staffName: "NEBIYOU DESALEGN",
+        staffNo: "S492178",
+        role: "MECHANIC",
+        aircraftType: "B777",
+        registration: "A6ECO",
+        componentPkg: "OXYGEN CYLINDER",
+        partNumber: "804044-15",
+        serialNumber: "C24020041",
+        vendor: "AVOX SYSTEMS",
+        reason: "Leak on cylinder neck during pressure test",
+        remarks: "• Oxygen cylinder found leaking at neck during pressure test.\n• White foam observed — confirmed low pressure fault.\n• Component declared unserviceable and routed to vendor for repair.",
+        photos: {
+          unserviceableLabel: "",
+          cylinderPicture: "",
+          manufacturerLabel: ""
+        },
+        extraPhotos: []
+      }
+    };
+
+    const Store = {
+      cloneDefaults() {
+        return structuredClone(AppConfig.defaults);
+      },
+      save(state) {
+        localStorage.setItem(AppConfig.storageKey, JSON.stringify(state));
+      },
+      load() {
+        const raw = localStorage.getItem(AppConfig.storageKey);
+        if (!raw) return null;
+        return { ...this.cloneDefaults(), ...JSON.parse(raw) };
+      },
+      clear() {
+        localStorage.removeItem(AppConfig.storageKey);
+      }
+    };
+
+    const Auth = {
+      isLoggedIn() {
+        return localStorage.getItem(AppConfig.sessionKey) === "active";
+      },
+      login() {
+        localStorage.setItem(AppConfig.sessionKey, "active");
+      },
+      logout() {
+        localStorage.removeItem(AppConfig.sessionKey);
+      }
+    };
+
+    const Formatters = {
+      displayDate(isoDate) {
+        if (!isoDate) return "";
+        const [year, month, day] = isoDate.split("-");
+        return `${day}/${month}/${year}`;
+      },
+      escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      },
+      remarks(value) {
+        return this.escapeHtml(value).replace(/\n/g, "<br>");
+      }
+    };
+
+    class ReportApp {
+      constructor() {
+        this.state = Store.cloneDefaults();
+        this.loginPage = document.querySelector("#loginPage");
+        this.appShell = document.querySelector("#appShell");
+        this.loginForm = document.querySelector("#loginForm");
+        this.form = document.querySelector("#reportForm");
+        this.preview = document.querySelector("#reportPreview");
+        this.uploadGrid = document.querySelector("#uploadGrid");
+        this.extraPhotoList = document.querySelector("#extraPhotoList");
+        this.statusText = document.querySelector("#statusText");
+        this.modal = document.querySelector("#pdfModal");
+        this.modalPreview = document.querySelector("#modalPreview");
+        this.init();
+      }
+
+      init() {
+        this.bindLogin();
+        this.buildUploads();
+        this.bindExtraPhotos();
+        this.bindFields();
+        this.bindActions();
+        this.applyStateToForm(this.state);
+        this.syncAuthView();
+        this.render();
+      }
+
+      bindLogin() {
+        this.loginForm.addEventListener("submit", event => {
+          event.preventDefault();
+          const username = document.querySelector("#loginUsername").value.trim();
+          const password = document.querySelector("#loginPassword").value.trim();
+          const error = document.querySelector("#loginError");
+
+          const validLogin =
+            username.toUpperCase() === AppConfig.credentials.username &&
+            password === AppConfig.credentials.password;
+
+          if (!validLogin) {
+            error.classList.remove("hidden");
+            return;
+          }
+
+          error.classList.add("hidden");
+          Auth.login();
+          this.syncAuthView();
+        });
+
+        document.querySelector("#logoutBtn").addEventListener("click", () => {
+          Auth.logout();
+          this.syncAuthView();
+        });
+      }
+
+      syncAuthView() {
+        const loggedIn = Auth.isLoggedIn();
+        this.loginPage.classList.toggle("hidden", loggedIn);
+        this.loginPage.classList.toggle("login-page", !loggedIn);
+        this.appShell.classList.toggle("hidden", !loggedIn);
+      }
+
+      buildUploads() {
+        this.uploadGrid.innerHTML = AppConfig.photoSlots.map(slot => `
+          <div class="space-y-1">
+            <div class="control-label">${slot.label}</div>
+            <label class="upload-card" data-upload="${slot.key}">
+              <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" />
+              <span class="upload-empty px-3 text-center text-sm font-black text-green-900">
+                Drop image here<br><span class="text-xs font-bold">or browse</span>
+              </span>
+              <div class="upload-actions">
+                <button class="mini-btn" data-replace="${slot.key}" type="button">Replace</button>
+                <button class="mini-btn" data-rotate="${slot.key}" type="button">Rotate</button>
+                <button class="mini-btn" data-remove="${slot.key}" type="button">Remove</button>
+              </div>
+            </label>
+          </div>
+        `).join("");
+
+        this.uploadGrid.querySelectorAll("[data-upload]").forEach(card => {
+          const key = card.dataset.upload;
+          const input = card.querySelector("input");
+
+          card.addEventListener("dragover", event => {
+            event.preventDefault();
+            card.classList.add("drag-over");
+          });
+
+          card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+
+          card.addEventListener("drop", event => {
+            event.preventDefault();
+            card.classList.remove("drag-over");
+            const file = event.dataTransfer.files?.[0];
+            if (file) this.readPhoto(key, file);
+          });
+
+          input.addEventListener("change", event => {
+            const file = event.target.files?.[0];
+            if (file) this.readPhoto(key, file);
+            input.value = "";
+          });
+        });
+
+        this.uploadGrid.addEventListener("click", event => {
+          const removeKey = event.target.dataset.remove;
+          const replaceKey = event.target.dataset.replace;
+          const rotateKey = event.target.dataset.rotate;
+          if (removeKey) {
+            event.preventDefault();
+            this.state.photos[removeKey] = "";
+            this.syncUpload(removeKey);
+            this.render();
+          }
+          if (replaceKey) {
+            event.preventDefault();
+            this.uploadGrid.querySelector(`[data-upload="${replaceKey}"] input`).click();
+          }
+          if (rotateKey) {
+            event.preventDefault();
+            this.rotateMainPhoto(rotateKey);
+          }
+        });
+      }
+
+      bindExtraPhotos() {
+        document.querySelector("#addExtraPhotoBtn").addEventListener("click", () => {
+          this.state.extraPhotos.push({
+            id: crypto.randomUUID(),
+            title: "ADDITIONAL PICTURE",
+            image: ""
+          });
+          this.renderExtraPhotoControls();
+          this.render();
+          this.setStatus("Picture block added");
+        });
+
+        this.extraPhotoList.addEventListener("input", event => {
+          const titleId = event.target.dataset.extraTitle;
+          if (!titleId) return;
+          const item = this.findExtraPhoto(titleId);
+          if (!item) return;
+          item.title = event.target.value;
+          this.render();
+        });
+
+        this.extraPhotoList.addEventListener("change", event => {
+          const uploadId = event.target.dataset.extraFile;
+          if (!uploadId) return;
+          const file = event.target.files?.[0];
+          if (file) this.readExtraPhoto(uploadId, file);
+          event.target.value = "";
+        });
+
+        this.extraPhotoList.addEventListener("click", event => {
+          const removeId = event.target.dataset.extraRemove;
+          const clearId = event.target.dataset.extraClear;
+          const replaceId = event.target.dataset.extraReplace;
+          const rotateId = event.target.dataset.extraRotate;
+
+          if (removeId) {
+            event.preventDefault();
+            this.state.extraPhotos = this.state.extraPhotos.filter(item => item.id !== removeId);
+            this.renderExtraPhotoControls();
+            this.render();
+            this.setStatus("Picture block removed");
+          }
+
+          if (clearId) {
+            event.preventDefault();
+            const item = this.findExtraPhoto(clearId);
+            if (!item) return;
+            item.image = "";
+            this.renderExtraPhotoControls();
+            this.render();
+          }
+
+          if (replaceId) {
+            event.preventDefault();
+            this.extraPhotoList.querySelector(`[data-extra-file="${replaceId}"]`).click();
+          }
+
+          if (rotateId) {
+            event.preventDefault();
+            this.rotateExtraPhoto(rotateId);
+          }
+        });
+
+        this.extraPhotoList.addEventListener("dragover", event => {
+          const card = event.target.closest("[data-extra-drop]");
+          if (!card) return;
+          event.preventDefault();
+          card.classList.add("drag-over");
+        });
+
+        this.extraPhotoList.addEventListener("dragleave", event => {
+          const card = event.target.closest("[data-extra-drop]");
+          if (card) card.classList.remove("drag-over");
+        });
+
+        this.extraPhotoList.addEventListener("drop", event => {
+          const card = event.target.closest("[data-extra-drop]");
+          if (!card) return;
+          event.preventDefault();
+          card.classList.remove("drag-over");
+          const file = event.dataTransfer.files?.[0];
+          if (file) this.readExtraPhoto(card.dataset.extraDrop, file);
+        });
+      }
+
+      bindFields() {
+        this.form.querySelectorAll("[data-field]").forEach(input => {
+          input.addEventListener("input", () => {
+            this.state[input.dataset.field] = input.value;
+            this.render();
+          });
+        });
+      }
+
+      bindActions() {
+        document.querySelector("#saveDraftBtn").addEventListener("click", () => {
+          Store.save(this.state);
+          this.setStatus("Draft saved");
+        });
+
+        document.querySelector("#loadDraftBtn").addEventListener("click", () => {
+          const draft = Store.load();
+          if (!draft) return this.setStatus("No saved draft found");
+          this.state = draft;
+          this.applyStateToForm(this.state);
+          this.render();
+          this.setStatus("Draft loaded");
+        });
+
+        document.querySelector("#resetBtn").addEventListener("click", () => {
+          this.state = Store.cloneDefaults();
+          this.applyStateToForm(this.state);
+          this.render();
+          this.setStatus("Form reset");
+        });
+
+        document.querySelector("#previewPdfBtn").addEventListener("click", () => this.openPreviewModal());
+        document.querySelector("#exportPdfBtn").addEventListener("click", () => this.exportPdf());
+        document.querySelector("#modalExportBtn").addEventListener("click", () => this.exportPdf());
+        document.querySelector("#closeModalBtn").addEventListener("click", () => this.closePreviewModal());
+        this.modal.addEventListener("click", event => {
+          if (event.target === this.modal) this.closePreviewModal();
+        });
+
+        document.querySelector("#themeToggle").addEventListener("click", event => {
+          document.documentElement.classList.toggle("dark");
+          event.currentTarget.textContent = document.documentElement.classList.contains("dark") ? "Light Mode" : "Dark Mode";
+        });
+      }
+
+      applyStateToForm(state) {
+        this.form.querySelectorAll("[data-field]").forEach(input => {
+          input.value = state[input.dataset.field] ?? "";
+        });
+        this.state.extraPhotos = Array.isArray(this.state.extraPhotos) ? this.state.extraPhotos : [];
+        AppConfig.photoSlots.forEach(slot => this.syncUpload(slot.key));
+        this.renderExtraPhotoControls();
+      }
+
+      readPhoto(key, file) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          this.setStatus("Use JPG, PNG, or WEBP only");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          this.state.photos[key] = reader.result;
+          this.syncUpload(key);
+          this.render();
+          this.setStatus("Photo updated");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      syncUpload(key) {
+        const card = this.uploadGrid.querySelector(`[data-upload="${key}"]`);
+        const oldImage = card.querySelector("img");
+        if (oldImage) oldImage.remove();
+        card.classList.toggle("has-image", Boolean(this.state.photos[key]));
+        card.querySelector(".upload-empty").style.display = this.state.photos[key] ? "none" : "block";
+        if (this.state.photos[key]) {
+          const image = document.createElement("img");
+          image.alt = key;
+          image.src = this.state.photos[key];
+          card.prepend(image);
+        }
+      }
+
+      findExtraPhoto(id) {
+        return this.state.extraPhotos.find(item => item.id === id);
+      }
+
+      readExtraPhoto(id, file) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          this.setStatus("Use JPG, PNG, or WEBP only");
+          return;
+        }
+
+        const item = this.findExtraPhoto(id);
+        if (!item) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          item.image = reader.result;
+          this.renderExtraPhotoControls();
+          this.render();
+          this.setStatus("Additional picture updated");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      async rotateMainPhoto(key) {
+        if (!this.state.photos[key]) return;
+        this.state.photos[key] = await this.rotateImageDataUrl(this.state.photos[key]);
+        this.syncUpload(key);
+        this.render();
+        this.setStatus("Photo rotated");
+      }
+
+      async rotateExtraPhoto(id) {
+        const item = this.findExtraPhoto(id);
+        if (!item?.image) return;
+        item.image = await this.rotateImageDataUrl(item.image);
+        this.renderExtraPhotoControls();
+        this.render();
+        this.setStatus("Additional picture rotated");
+      }
+
+      rotateImageDataUrl(dataUrl) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = image.naturalHeight;
+            canvas.height = image.naturalWidth;
+            const context = canvas.getContext("2d");
+            context.translate(canvas.width / 2, canvas.height / 2);
+            context.rotate(Math.PI / 2);
+            context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+            resolve(canvas.toDataURL("image/jpeg", 0.96));
+          };
+          image.onerror = reject;
+          image.src = dataUrl;
+        });
+      }
+
+      renderExtraPhotoControls() {
+        if (!this.state.extraPhotos.length) {
+          this.extraPhotoList.innerHTML = `<p class="text-sm font-bold text-slate-500 dark:text-slate-400">No additional pictures added.</p>`;
+          return;
+        }
+
+        this.extraPhotoList.innerHTML = this.state.extraPhotos.map((item, index) => `
+          <div class="rounded-md border border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <label class="min-w-0 flex-1 space-y-1">
+                <span class="control-label">Picture ${index + 1} Title</span>
+                <input class="input" data-extra-title="${item.id}" value="${Formatters.escapeHtml(item.title)}" />
+              </label>
+              <button class="btn btn-danger self-end" type="button" data-extra-remove="${item.id}">Remove</button>
+            </div>
+            <label class="upload-card ${item.image ? "has-image" : ""}" data-extra-drop="${item.id}">
+              <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" data-extra-file="${item.id}" />
+              ${item.image ? `<img src="${item.image}" alt="${Formatters.escapeHtml(item.title)}">` : ""}
+              <span class="upload-empty px-3 text-center text-sm font-black text-green-900" style="${item.image ? "display:none" : ""}">
+                Drop image here<br><span class="text-xs font-bold">or browse</span>
+              </span>
+              <div class="upload-actions">
+                <button class="mini-btn" data-extra-replace="${item.id}" type="button">Replace</button>
+                <button class="mini-btn" data-extra-rotate="${item.id}" type="button">Rotate</button>
+                <button class="mini-btn" data-extra-clear="${item.id}" type="button">Remove Image</button>
+              </div>
+            </label>
+          </div>
+        `).join("");
+      }
+
+      render() {
+        this.preview.innerHTML = this.reportMarkup(false);
+      }
+
+      reportMarkup(forPdf) {
+        const s = this.state;
+        const e = Formatters.escapeHtml;
+        const photoHtml = AppConfig.photoSlots.map(slot => {
+          const src = s.photos[slot.key];
+          return `
+            <div class="photo-frame">
+              ${src ? `<img src="${src}" alt="${slot.label}">` : `<div class="photo-placeholder">${slot.label}</div>`}
+            </div>
+          `;
+        }).join("");
+        const extraPhotoHtml = (s.extraPhotos || []).filter(item => item.image).map(item => `
+          <article class="extra-photo-item">
+            <div class="extra-photo-title">${e(item.title || "ADDITIONAL PICTURE")}</div>
+            <div class="extra-photo-frame">
+              <img src="${item.image}" alt="${e(item.title || "Additional picture")}">
+            </div>
+          </article>
+        `).join("");
+
+        return `
+          <section class="report-header">
+            <div class="report-title-block">
+              <h1>Cabin-Safety<br>Workshop Inspection<br>&amp; Findings</h1>
+            </div>
+            <aside class="note-box">
+              <h2>Note:</h2>
+              <ol>
+                <li>This document is uncontrolled and intended to supplement workshop inspection &amp; findings.</li>
+                <li>Incident/Event qualifying for reporting should be done on ESR through SID</li>
+                <li>Technical queries &amp; clarifications should be done raising EER to ETS.</li>
+              </ol>
+            </aside>
+          </section>
+
+          <div class="report-section-title">${e(s.title)}</div>
+          <section class="report-table">
+            <div class="report-cell report-label">Date of Inspection</div>
+            <div class="report-cell report-value">${e(Formatters.displayDate(s.date))}</div>
+            <div class="report-cell report-label">Time</div>
+            <div class="report-cell report-value">${e(s.time)}</div>
+
+            <div class="report-cell report-label">Raised By</div>
+            <div class="report-cell report-value">${e(s.staffName)}</div>
+            <div class="report-cell report-label">Staff No</div>
+            <div class="report-cell report-value">${e(s.staffNo)}</div>
+
+            <div class="report-cell report-label">Role</div>
+            <div class="report-cell report-value">${e(s.role)}</div>
+            <div class="report-cell report-label">Registration</div>
+            <div class="report-cell report-value">${e(s.registration)}</div>
+
+            <div class="report-cell report-label">Aircraft Type</div>
+            <div class="report-cell report-value">${e(s.aircraftType)}</div>
+            <div class="report-cell report-label">Part Number</div>
+            <div class="report-cell report-value">${e(s.partNumber)}</div>
+
+            <div class="report-cell report-label">Component</div>
+            <div class="report-cell report-value">${e(s.componentPkg)}</div>
+            <div class="report-cell report-label">Reason for Removal</div>
+            <div class="report-cell report-value">${e(s.reason)}</div>
+
+            <div class="report-cell report-label">Serial Number</div>
+            <div class="report-cell report-value">${e(s.serialNumber)}</div>
+            <div class="report-cell report-label">Vendor/Manu-<br>facturer</div>
+            <div class="report-cell report-value">${e(s.vendor)}</div>
+          </section>
+
+          <section class="photo-grid">${photoHtml}</section>
+          ${extraPhotoHtml ? `<section class="extra-photo-grid">${extraPhotoHtml}</section>` : ""}
+
+          <section class="remarks">
+            <div class="remarks-title">ORIGINATOR REMARKS/SUMMARY</div>
+            <div class="remarks-body">${Formatters.remarks(s.remarks)}</div>
+          </section>
+          ${forPdf ? `<div class="pdf-footer">Generated by Shop Report App</div>` : ""}
+        `;
+      }
+
+      openPreviewModal() {
+        this.modalPreview.innerHTML = `<div class="report-sheet">${this.reportMarkup(true)}</div>`;
+        this.modal.setAttribute("aria-hidden", "false");
+      }
+
+      closePreviewModal() {
+        this.modal.setAttribute("aria-hidden", "true");
+        this.modalPreview.innerHTML = "";
+      }
+
+      async exportPdf() {
+        this.setStatus("Generating PDF...");
+        const { jsPDF } = window.jspdf;
+        const pdfNode = document.createElement("div");
+        pdfNode.style.position = "fixed";
+        pdfNode.style.left = "-10000px";
+        pdfNode.style.top = "0";
+        pdfNode.innerHTML = `<div class="report-sheet">${this.reportMarkup(true)}</div>`;
+        document.body.appendChild(pdfNode);
+
+        const sheet = pdfNode.querySelector(".report-sheet");
+        const canvas = await html2canvas(sheet, {
+          scale: 2.5,
+          useCORS: true,
+          backgroundColor: "#f4f4f1"
+        });
+
+        const image = canvas.toDataURL("image/jpeg", 0.98);
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const imageHeight = (canvas.height * pageWidth) / canvas.width;
+        let yOffset = 0;
+
+        while (yOffset < imageHeight) {
+          if (yOffset > 0) pdf.addPage();
+          pdf.addImage(image, "JPEG", 0, -yOffset, pageWidth, imageHeight);
+          yOffset += pageHeight;
+        }
+        pdf.save(`Cabin-Safety-Shop-Report-${this.state.serialNumber || "draft"}.pdf`);
+        pdfNode.remove();
+        this.setStatus("PDF exported");
+      }
+
+      setStatus(message) {
+        this.statusText.textContent = message;
+        window.clearTimeout(this.statusTimer);
+        this.statusTimer = window.setTimeout(() => {
+          this.statusText.textContent = "Ready";
+        }, 2600);
+      }
+    }
+
+    new ReportApp();
+  </script>
+</body>
+</html>
