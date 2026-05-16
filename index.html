@@ -378,7 +378,7 @@
     }
 
     .extra-photo-frame {
-      min-height: 245px;
+      height: 245px;
       border: 2px solid var(--green-dark);
       background: rgba(255,255,255,.28);
       overflow: hidden;
@@ -388,7 +388,7 @@
 
     .extra-photo-frame img {
       width: 100%;
-      height: auto;
+      height: 100%;
       object-fit: contain;
       display: block;
       background: rgba(255,255,255,.58);
@@ -555,10 +555,15 @@
             <input class="input" data-field="staffNo" value="S492178" />
           </label>
           <label class="space-y-1">
+            <span class="control-label">Work Order</span>
+            <input class="input" data-field="workOrder" value="" />
+          </label>
+          <label class="space-y-1">
             <span class="control-label">Role</span>
             <select class="input" data-field="role">
               <option>MECHANIC</option>
               <option>LICENCED TECHNICIAN</option>
+              <option>WORKSHOP TECHNICIAN</option>
               <option>SUPERVISOR</option>
               <option>SHOP ENGINEER</option>
             </select>
@@ -595,13 +600,19 @@
 
         <section>
           <div class="mb-2 flex items-center justify-between">
-            <h2 class="text-sm font-black uppercase tracking-wide text-slate-700 dark:text-slate-200">Photo Uploads</h2>
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">JPG, PNG, WEBP</span>
+            <label class="flex-1 space-y-1">
+              <span class="control-label">Photo Uploads Section Title</span>
+              <input class="input text-xs" id="photoSectionTitle" value="PHOTOGRAPHS" />
+            </label>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-2 self-end pb-1">JPG, PNG, WEBP</span>
           </div>
           <div id="uploadGrid" class="grid gap-3 sm:grid-cols-3"></div>
           <div class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
             <div class="mb-3 flex items-center justify-between gap-3">
-              <h3 class="text-sm font-black uppercase tracking-wide text-slate-700 dark:text-slate-200">Additional Pictures</h3>
+              <label class="flex-1 space-y-1">
+                <span class="control-label">Additional Pictures Section Title</span>
+                <input class="input text-xs" id="additionalPhotoSectionTitle" value="ADDITIONAL PICTURES" />
+              </label>
               <button id="addExtraPhotoBtn" class="btn btn-secondary" type="button">Add Picture + Title</button>
             </div>
             <div id="extraPhotoList" class="space-y-3"></div>
@@ -663,6 +674,7 @@
         time: "04:00",
         staffName: "NEBIYOU DESALEGN",
         staffNo: "S492178",
+        workOrder: "",
         role: "LICENCED TECHNICIAN",
         aircraftType: "B777",
         registration: "A6ECO",
@@ -672,6 +684,8 @@
         vendor: "AVOX SYSTEMS",
         reason: "Leak on cylinder neck during pressure test",
         remarks: "• Oxygen cylinder found leaking at neck during pressure test.\n• White foam observed — confirmed low pressure fault.\n• Component declared unserviceable and routed to vendor for repair.",
+        photoSectionTitle: "PHOTOGRAPHS",
+        additionalPhotoSectionTitle: "ADDITIONAL PICTURES",
         photos: {
           unserviceableLabel: "",
           cylinderPicture: "",
@@ -971,6 +985,24 @@
             this.render();
           });
         });
+
+        // Bind section title inputs
+        const photoSectionTitleInput = document.querySelector("#photoSectionTitle");
+        const additionalPhotoSectionTitleInput = document.querySelector("#additionalPhotoSectionTitle");
+        
+        if (photoSectionTitleInput) {
+          photoSectionTitleInput.addEventListener("input", () => {
+            this.state.photoSectionTitle = photoSectionTitleInput.value;
+            this.render();
+          });
+        }
+
+        if (additionalPhotoSectionTitleInput) {
+          additionalPhotoSectionTitleInput.addEventListener("input", () => {
+            this.state.additionalPhotoSectionTitle = additionalPhotoSectionTitleInput.value;
+            this.render();
+          });
+        }
       }
 
       bindActions() {
@@ -1013,6 +1045,10 @@
         this.form.querySelectorAll("[data-field]").forEach(input => {
           input.value = state[input.dataset.field] ?? "";
         });
+        const photoSectionTitleInput = document.querySelector("#photoSectionTitle");
+        const additionalPhotoSectionTitleInput = document.querySelector("#additionalPhotoSectionTitle");
+        if (photoSectionTitleInput) photoSectionTitleInput.value = state.photoSectionTitle ?? "PHOTOGRAPHS";
+        if (additionalPhotoSectionTitleInput) additionalPhotoSectionTitleInput.value = state.additionalPhotoSectionTitle ?? "ADDITIONAL PICTURES";
         this.state.extraPhotos = Array.isArray(this.state.extraPhotos) ? this.state.extraPhotos : [];
         AppConfig.photoSlots.forEach(slot => this.syncUpload(slot.key));
         this.renderExtraPhotoControls();
@@ -1192,8 +1228,11 @@
             <div class="report-cell report-label">Staff No</div>
             <div class="report-cell report-value">${e(s.staffNo)}</div>
 
+            <div class="report-cell report-label">Work Order</div>
+            <div class="report-cell report-value">${e(s.workOrder)}</div>
             <div class="report-cell report-label">Role</div>
             <div class="report-cell report-value">${e(s.role)}</div>
+
             <div class="report-cell report-label">Registration</div>
             <div class="report-cell report-value">${e(s.registration)}</div>
 
@@ -1213,8 +1252,12 @@
             <div class="report-cell report-value">${e(s.vendor)}</div>
           </section>
 
+          <div class="report-section-title">${e(s.photoSectionTitle || "PHOTOGRAPHS")}</div>
           <section class="photo-grid">${photoHtml}</section>
-          ${extraPhotoHtml ? `<section class="extra-photo-grid">${extraPhotoHtml}</section>` : ""}
+          ${extraPhotoHtml ? `
+            <div class="report-section-title">${e(s.additionalPhotoSectionTitle || "ADDITIONAL PICTURES")}</div>
+            <section class="extra-photo-grid">${extraPhotoHtml}</section>
+          ` : ""}
 
           <section class="remarks">
             <div class="remarks-title">ORIGINATOR REMARKS/SUMMARY</div>
