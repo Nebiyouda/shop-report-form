@@ -114,7 +114,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       <section class="panel p-4">
         <div class="mb-3">
           <h2 class="font-black text-slate-900">Select asset</h2>
-          <p class="text-xs font-semibold text-slate-500">Choose a P/N and enter its serial number. DOM and HST are fetched from Data.</p>
+          <p class="text-xs font-semibold text-slate-500">Enter a serial number or choose a P/N first. DOM and HST are fetched from Data.</p>
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="space-y-1">
@@ -282,13 +282,24 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       if (matches.length === 1) serialNumberInput.value = matches[0].serialNumber;
     };
 
+    const selectAssetPart = partNumber => {
+      partNumberSelect.value = partNumber;
+      templatePartSelect.value = partNumber;
+      templateInput.value = templateForPart(partNumber);
+    };
+
     const findSelectedAsset = () => {
       const partNumber = partNumberSelect.value.trim();
       const serialNumber = serialNumberInput.value.trim();
-      if (!partNumber) throw new Error("Select a part number first.");
       if (!serialNumber) throw new Error("Insert a serial number first.");
-      const asset = sourceAssets.find(item => item.partNumber === partNumber && item.serialNumber.toUpperCase() === serialNumber.toUpperCase());
+      const serialMatches = sourceAssets.filter(item => item.serialNumber.trim().toUpperCase() === serialNumber.toUpperCase());
+      if (!serialMatches.length) throw new Error(`No asset found for serial number ${serialNumber}.`);
+      if (!partNumber && serialMatches.length > 1) throw new Error(`Serial ${serialNumber} belongs to multiple P/Ns. Select the P/N first.`);
+      const asset = partNumber
+        ? serialMatches.find(item => item.partNumber === partNumber)
+        : serialMatches[0];
       if (!asset) throw new Error(`No matching asset for ${partNumber} / ${serialNumber}.`);
+      selectAssetPart(asset.partNumber);
       return makeAsset(asset);
     };
 
@@ -302,7 +313,10 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       return { ...row, dom: formatMonth(domDate), hst: formatMonth(hstDate), lifeExpiry: formatMonth(lifeExpiryDate), nextHst: formatMonth(nextHstDate), nextMaintenanceDue: formatDueDate(nextMaintenanceDate) };
     };
 
-    const templateForPart = partNumber => templatesByPart[partNumber] || defaultTemplate;
+    const templateForPart = partNumber => {
+      const key = Object.keys(templatesByPart).find(item => item.trim().toUpperCase() === String(partNumber || "").trim().toUpperCase());
+      return key ? templatesByPart[key] : defaultTemplate;
+    };
     const datePlaceholders = new Set(["dom", "hst", "lifeExpiry", "nextHst", "nextMaintenanceDue"]);
     const renderTemplate = (template, asset) => template.replace(/{{\s*(\w+)\s*}}/g, (match, key) => datePlaceholders.has(key) ? asset[key] || "" : match);
 
@@ -326,6 +340,13 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       updateSerialOptions();
       templatePartSelect.value = partNumberSelect.value;
       templateInput.value = templateForPart(partNumberSelect.value);
+    });
+
+    serialNumberInput.addEventListener("input", () => {
+      const serialNumber = serialNumberInput.value.trim().toUpperCase();
+      if (!serialNumber) return;
+      const matches = sourceAssets.filter(asset => asset.serialNumber.trim().toUpperCase() === serialNumber);
+      if (matches.length === 1) selectAssetPart(matches[0].partNumber);
     });
 
     templatePartSelect.addEventListener("change", () => {
