@@ -147,7 +147,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
   </main>
 
   <script type="module">
-    const STORAGE_KEY = "eng360.assetRelease.template.v1";
+    const STORAGE_KEY = "eng360.assetRelease.template.v2";
     const assetInput = document.querySelector("#assetInput");
     const templateInput = document.querySelector("#templateInput");
     const results = document.querySelector("#results");
@@ -204,6 +204,9 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     CERTIFICATE NUMBER: GIGC/QC/GAS/SG4275
     NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.`
         };
+    Object.keys(builtInTemplates).forEach(partNumber => {
+      builtInTemplates[partNumber] = builtInTemplates[partNumber].replace(/^\s{4}/gm, "");
+    });
     let generatedComments = [];
     let sourceAssets = [];
     const previewFilters = { partNumber: "", serialNumber: "", dom: "", hst: "" };
