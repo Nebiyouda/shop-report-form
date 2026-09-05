@@ -244,6 +244,14 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
 
     const parseMonth = value => {
       const text = String(value || "").trim();
+      if (typeof value === "number" && window.XLSX?.SSF?.parse_date_code) {
+        const excelDate = window.XLSX.SSF.parse_date_code(value);
+        if (excelDate?.y && excelDate?.m) return new Date(Date.UTC(excelDate.y, excelDate.m - 1, 1));
+      }
+      const isoDate = text.match(/^(\d{4})[-/.](\d{1,2})(?:[-/.]\d{1,2})?/);
+      if (isoDate) return new Date(Date.UTC(Number(isoDate[1]), Number(isoDate[2]) - 1, 1));
+      const fullDate = text.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+      if (fullDate) return new Date(Date.UTC(Number(fullDate[3]), Number(fullDate[2]) - 1, 1));
       const match = text.match(/^(\d{1,2})[\/-](\d{4})$/) || text.match(/^(\d{4})[\/-](\d{1,2})$/);
       if (!match) return null;
       const year = match[2].length === 4 ? Number(match[2]) : Number(match[1]);
