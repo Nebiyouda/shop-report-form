@@ -73,6 +73,10 @@
           <button class="btn btn-secondary" id="saveTemplateBtn" type="button">Save template</button>
           <button class="btn btn-secondary" id="resetTemplateBtn" type="button">Reset</button>
         </div>
+        <div class="mb-3 flex gap-2 no-print">
+          <input class="input" id="newPartNumberInput" placeholder="New part number" autocomplete="off" />
+          <button class="btn btn-green" id="addPartNumberBtn" type="button">Add part number</button>
+        </div>
         <label class="mb-3 block space-y-1">
           <span class="label">Template part number</span>
           <select class="input" id="templatePartSelect"><option value="">Select P/N</option></select>
@@ -143,6 +147,20 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     let sourceAssets = [];
     let templatesByPart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
+    const refreshPartSelectors = () => {
+      const dataPartNumbers = [...new Set(sourceAssets.map(asset => asset.partNumber).filter(Boolean))];
+      const templatePartNumbers = Object.keys(templatesByPart);
+      const allPartNumbers = [...new Set([...dataPartNumbers, ...templatePartNumbers])];
+      const selectedTemplatePart = templatePartSelect.value;
+      partNumberSelect.innerHTML = dataPartNumbers.length
+        ? `<option value="">Select P/N</option>${dataPartNumbers.map(partNumber => `<option value="${escapeHtml(partNumber)}">${escapeHtml(partNumber)}</option>`).join("")}`
+        : `<option value="">Load data first</option>`;
+      templatePartSelect.innerHTML = allPartNumbers.length
+        ? `<option value="">Select P/N</option>${allPartNumbers.map(partNumber => `<option value="${escapeHtml(partNumber)}">${escapeHtml(partNumber)}</option>`).join("")}`
+        : `<option value="">Add a part number</option>`;
+      if (allPartNumbers.includes(selectedTemplatePart)) templatePartSelect.value = selectedTemplatePart;
+    };
+
     const formatMonth = date => {
       const month = String(date.getUTCMonth() + 1).padStart(2, "0");
       return `${month}/${date.getUTCFullYear()}`;
@@ -176,13 +194,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
 
     const loadSourceTable = () => {
       sourceAssets = parseCsv(assetInput.value);
-      const partNumbers = [...new Set(sourceAssets.map(asset => asset.partNumber).filter(Boolean))];
-      partNumberSelect.innerHTML = partNumbers.length
-        ? `<option value="">Select P/N</option>${partNumbers.map(partNumber => `<option value="${escapeHtml(partNumber)}">${escapeHtml(partNumber)}</option>`).join("")}`
-        : `<option value="">No part numbers found</option>`;
-      templatePartSelect.innerHTML = partNumbers.length
-        ? `<option value="">Select P/N</option>${partNumbers.map(partNumber => `<option value="${escapeHtml(partNumber)}">${escapeHtml(partNumber)}</option>`).join("")}`
-        : `<option value="">Load data first</option>`;
+      refreshPartSelectors();
       serialOptions.innerHTML = "";
       serialNumberInput.value = "";
       statusText.textContent = `${sourceAssets.length} asset${sourceAssets.length === 1 ? "" : "s"} loaded for lookup.`;
@@ -284,9 +296,21 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       document.querySelectorAll("[data-route]").forEach(tab => tab.classList.toggle("active", tab.dataset.route === routeId));
     };
     document.querySelectorAll("[data-route]").forEach(tab => tab.addEventListener("click", () => setRoute(tab.dataset.route)));
-    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; partNumberSelect.innerHTML = "<option value=\"\">Load data first</option>"; templatePartSelect.innerHTML = "<option value=\"\">Load data first</option>"; serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; setStatus("Cleared."); });
+    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; refreshPartSelectors(); serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; setStatus("Data cleared. Saved templates remain available."); });
     document.querySelector("#saveTemplateBtn").addEventListener("click", () => { if (!templatePartSelect.value) return setStatus("Select a template part number first."); templatesByPart[templatePartSelect.value] = templateInput.value; localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesByPart)); setStatus(`Template saved for ${templatePartSelect.value}.`); });
     document.querySelector("#loadTemplateBtn").addEventListener("click", () => { templatesByPart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); templateInput.value = templateForPart(templatePartSelect.value); setStatus("Saved templates loaded."); });
+    document.querySelector("#addPartNumberBtn").addEventListener("click", () => {
+      const partNumber = document.querySelector("#newPartNumberInput").value.trim();
+      if (!partNumber) return setStatus("Enter a part number first.");
+      if (templatesByPart[partNumber]) return setStatus(`${partNumber} already has a template.`);
+      templatesByPart[partNumber] = defaultTemplate;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesByPart));
+      refreshPartSelectors();
+      templatePartSelect.value = partNumber;
+      templateInput.value = defaultTemplate;
+      document.querySelector("#newPartNumberInput").value = "";
+      setStatus(`${partNumber} added. Edit and save its template.`);
+    });
     document.querySelector("#resetTemplateBtn").addEventListener("click", () => { templateInput.value = defaultTemplate; if (templatePartSelect.value) { templatesByPart[templatePartSelect.value] = defaultTemplate; localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesByPart)); } if (generatedComments.length) renderResults(generatedComments.map(item => item.asset)); setStatus("Template reset."); });
     document.querySelector("#printBtn").addEventListener("click", () => window.print());
     document.querySelector("#copyBtn").addEventListener("click", async () => { await navigator.clipboard.writeText(generatedComments.map(item => item.comment).join("\n\n")); setStatus("All comments copied."); });
