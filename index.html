@@ -66,6 +66,31 @@
       background: #1e293b;
       border-left: 3px solid var(--green);
     }
+    .sidebar {
+      width: 16rem;
+      transition: width .2s ease;
+    }
+    .sidebar-collapsed .sidebar {
+      width: 4.75rem;
+    }
+    .sidebar-label,
+    .sidebar-user-details,
+    .sidebar-section-label {
+      transition: opacity .15s ease;
+    }
+    .sidebar-collapsed .sidebar-label,
+    .sidebar-collapsed .sidebar-user-details,
+    .sidebar-collapsed .sidebar-section-label {
+      display: none;
+    }
+    .sidebar-collapsed .sidebar-link {
+      justify-content: center;
+      padding-left: .5rem;
+      padding-right: .5rem;
+    }
+    .sidebar-collapsed .sidebar-user {
+      justify-content: center;
+    }
     iframe.app-frame {
       width: 100%;
       height: calc(100vh - 80px);
@@ -100,22 +125,22 @@
   </div>
 
   <div id="appShell" class="flex min-h-screen">
-    <aside class="no-print flex w-64 flex-col border-r border-slate-200 bg-sidebar text-white">
+    <aside id="sidebar" class="sidebar no-print flex flex-col border-r border-slate-200 bg-sidebar text-white">
       <div class="flex items-center gap-3 border-b border-slate-700 p-4">
         <div class="logo-mark text-xl">ENG360</div>
-        <div>
+        <div class="sidebar-label">
           <div class="text-sm font-black leading-tight">Engineering</div>
           <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Suite v1.1</div>
         </div>
       </div>
       <nav class="flex-1 overflow-y-auto p-3">
-        <div class="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Applications</div>
+        <div class="sidebar-section-label mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Applications</div>
         <div id="appNav" class="space-y-1"></div>
       </nav>
       <div class="border-t border-slate-700 p-3">
-        <div class="flex items-center gap-2 rounded-md bg-slate-800 p-2">
+        <div class="sidebar-user flex items-center gap-2 rounded-md bg-slate-800 p-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-full bg-aviation text-xs font-black">U</div>
-          <div class="min-w-0">
+          <div class="sidebar-user-details min-w-0">
             <div id="userDisplay" class="truncate text-sm font-bold">Guest</div>
             <div id="userRole" class="truncate text-[10px] font-bold uppercase text-slate-400">Not signed in</div>
           </div>
@@ -128,9 +153,14 @@
 
     <main class="flex-1 flex flex-col min-w-0">
       <header class="no-print flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-        <div>
-          <h1 id="pageTitle" class="text-lg font-black text-slate-900">Dashboard</h1>
-          <p id="pageSubtitle" class="text-xs font-semibold text-slate-500">Select an application to begin</p>
+        <div class="flex items-center gap-3">
+          <button id="sidebarToggle" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900" type="button" title="Collapse navigation" aria-label="Collapse navigation" aria-expanded="true">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div>
+            <h1 id="pageTitle" class="text-lg font-black text-slate-900">Dashboard</h1>
+            <p id="pageSubtitle" class="text-xs font-semibold text-slate-500">Select an application to begin</p>
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <span id="statusBadge" class="hidden rounded-full bg-green-100 px-2.5 py-1 text-[10px] font-bold uppercase text-green-700">Online</span>
@@ -196,6 +226,12 @@
       init() {
         this.cache();
         this.bind();
+        if (localStorage.getItem("eng360_sidebar_collapsed.v1") === "true") {
+          this.appShell.classList.add("sidebar-collapsed");
+          this.sidebarToggle.setAttribute("aria-expanded", "false");
+          this.sidebarToggle.setAttribute("aria-label", "Expand navigation");
+          this.sidebarToggle.title = "Expand navigation";
+        }
         this.renderSidebar();
         this.renderDashboard();
         this.syncAuth();
@@ -207,6 +243,7 @@
         this.authPassword = document.getElementById("authPassword");
         this.authError = document.getElementById("authError");
         this.appShell = document.getElementById("appShell");
+        this.sidebarToggle = document.getElementById("sidebarToggle");
         this.appNav = document.getElementById("appNav");
         this.appGrid = document.getElementById("appGrid");
         this.appFrame = document.getElementById("appFrame");
@@ -227,12 +264,20 @@
           Auth.logout();
           this.syncAuth();
         });
+        this.sidebarToggle.addEventListener("click", () => this.toggleSidebar());
         window.addEventListener("message", e => {
           if (e.data && e.data.type === "eng360-set-title") {
             this.pageTitle.textContent = e.data.title || "Application";
             this.pageSubtitle.textContent = e.data.subtitle || "";
           }
         });
+      },
+      toggleSidebar() {
+        const collapsed = this.appShell.classList.toggle("sidebar-collapsed");
+        this.sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
+        this.sidebarToggle.setAttribute("aria-label", collapsed ? "Expand navigation" : "Collapse navigation");
+        this.sidebarToggle.title = collapsed ? "Expand navigation" : "Collapse navigation";
+        localStorage.setItem("eng360_sidebar_collapsed.v1", String(collapsed));
       },
       handleLogin() {
         const email = this.authEmail.value.trim();
@@ -265,7 +310,7 @@
         this.appNav.innerHTML = AppRegistry.apps.map(app => `
           <button data-app="${app.id}" class="sidebar-link flex w-full items-center gap-2 rounded-md border-l-3 border-transparent px-3 py-2 text-left text-sm font-semibold text-slate-300 hover:text-white">
             <span class="flex h-8 w-8 items-center justify-center rounded-md ${app.color} text-white">${app.icon}</span>
-            <span class="truncate">${app.name}</span>
+            <span class="sidebar-label truncate">${app.name}</span>
           </button>
         `).join("");
         this.appNav.querySelectorAll("[data-app]").forEach(btn => {
