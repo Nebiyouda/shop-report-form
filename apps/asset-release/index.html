@@ -146,7 +146,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     </section>
   </main>
 
-  <script>
+  <script type="module">
     const STORAGE_KEY = "eng360.assetRelease.template.v1";
     const assetInput = document.querySelector("#assetInput");
     const templateInput = document.querySelector("#templateInput");
@@ -361,10 +361,10 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       const file = event.target.files?.[0];
       if (!file) return;
       try {
-        const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+        const workbook = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         if (!firstSheet) throw new Error("The workbook has no worksheets.");
-        assetInput.value = XLSX.utils.sheet_to_csv(firstSheet);
+        assetInput.value = window.XLSX.utils.sheet_to_csv(firstSheet);
         loadSourceTable();
         setStatus(`${file.name} loaded from ${workbook.SheetNames[0]}.`);
       } catch (error) {
