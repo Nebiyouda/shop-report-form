@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ENG360 Asset Release</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     :root { --blue: #29496d; --green: #a9c9ac; --green-dark: #6b9f72; --paper: #f4f4f1; --ink: #111827; }
     * { box-sizing: border-box; }
@@ -48,9 +49,9 @@
         <div class="mb-3 flex items-center justify-between gap-3">
           <div>
             <h2 class="font-black text-slate-900">Asset data source</h2>
-            <p class="text-xs font-semibold text-slate-500">CSV columns: part number, serial number, DOM, HST</p>
+            <p class="text-xs font-semibold text-slate-500">Excel or CSV columns: part number, serial number, DOM, HST</p>
           </div>
-          <label class="btn btn-secondary cursor-pointer no-print">Choose CSV<input class="hidden" id="csvFile" type="file" accept=".csv,text/csv" /></label>
+          <label class="btn btn-secondary cursor-pointer no-print">Choose Excel / CSV<input class="hidden" id="csvFile" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" /></label>
         </div>
         <textarea class="input min-h-[220px] font-mono text-xs" id="assetInput" spellcheck="false">part number,serial number,DOM,HST
 804044-15,C24020041,12/2024,12/2024</textarea>
@@ -323,13 +324,21 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       }
     });
 
-    document.querySelector("#csvFile").addEventListener("change", event => {
+    document.querySelector("#csvFile").addEventListener("change", async event => {
       const file = event.target.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => { assetInput.value = reader.result; loadSourceTable(); setStatus(`${file.name} loaded.`); };
-      reader.readAsText(file);
-      event.target.value = "";
+      try {
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        if (!firstSheet) throw new Error("The workbook has no worksheets.");
+        assetInput.value = XLSX.utils.sheet_to_csv(firstSheet);
+        loadSourceTable();
+        setStatus(`${file.name} loaded from ${workbook.SheetNames[0]}.`);
+      } catch (error) {
+        setStatus(`Could not read ${file.name}: ${error.message}`);
+      } finally {
+        event.target.value = "";
+      }
     });
 
     const setStatus = message => { statusText.textContent = message; commentStatus.textContent = message; };
