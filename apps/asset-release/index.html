@@ -23,6 +23,12 @@
     .route-tab { border-bottom: 3px solid transparent; color: #64748b; padding: 10px 14px; font-size: 12px; font-weight: 900; }
     .route-tab.active { border-color: var(--blue); color: var(--blue); }
     .route-view.hidden { display: none; }
+    .data-preview { max-height: 430px; overflow: auto; border: 1px solid #cbd5e1; border-radius: 5px; }
+    .data-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-preview th { position: sticky; top: 0; background: #e2e8f0; color: #334155; font-size: 10px; letter-spacing: .05em; text-align: left; text-transform: uppercase; }
+    .data-preview th, .data-preview td { border-bottom: 1px solid #e2e8f0; padding: 9px 10px; white-space: nowrap; }
+    .data-preview tr:nth-child(even) td { background: #f8fafc; }
+    .empty-preview { color: #64748b; font-size: 12px; font-weight: 700; padding: 18px; text-align: center; }
     .release-comment { min-height: 260px; white-space: pre-wrap; font-family: Consolas, monospace; font-size: 13px; line-height: 1.55; }
     @media print { .no-print { display: none !important; } body { background: white; } .panel { box-shadow: none; } }
   </style>
@@ -59,6 +65,13 @@
           <button class="btn btn-green" id="loadTableBtn" type="button">Load data</button>
           <button class="btn btn-secondary" id="clearBtn" type="button">Clear</button>
           <span class="status" id="statusText"></span>
+        </div>
+        <div class="mt-5 border-t border-slate-200 pt-4">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <h3 class="font-black text-slate-900">Uploaded data preview</h3>
+            <span class="label" id="previewCount">0 rows</span>
+          </div>
+          <div class="data-preview" id="dataPreview"><div class="empty-preview">Load an Excel or CSV file to preview its rows.</div></div>
         </div>
       </section>
     </section>
@@ -143,6 +156,8 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     const templatePartSelect = document.querySelector("#templatePartSelect");
     const commentStatus = document.querySelector("#commentStatus");
     const templatePanel = document.querySelector("#templatePanel");
+    const dataPreview = document.querySelector("#dataPreview");
+    const previewCount = document.querySelector("#previewCount");
     const defaultTemplate = templateInput.value;
         const builtInTemplates = {
       "9700G2ABF10A": `CYLINDER INSPECTED, TESTED AND REFILLED WITH MIL-PRF-27210J AVIATOR'S BREATHING TYPE I OXYGEN GAS AS PER CMM 35-31-55, REV:9 DATED:28/05/2024, TASK 35-31-55-610-801-A01.
@@ -204,6 +219,16 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       if (allPartNumbers.includes(selectedTemplatePart)) templatePartSelect.value = selectedTemplatePart;
     };
 
+    const renderDataPreview = () => {
+      previewCount.textContent = `${sourceAssets.length} row${sourceAssets.length === 1 ? "" : "s"}`;
+      if (!sourceAssets.length) {
+        dataPreview.innerHTML = `<div class="empty-preview">Load an Excel or CSV file to preview its rows.</div>`;
+        return;
+      }
+      const visibleRows = sourceAssets.slice(0, 500);
+      dataPreview.innerHTML = `<table><thead><tr><th>Part Number</th><th>Serial Number</th><th>DOM</th><th>HST</th></tr></thead><tbody>${visibleRows.map(asset => `<tr><td>${escapeHtml(asset.partNumber)}</td><td>${escapeHtml(asset.serialNumber)}</td><td>${escapeHtml(asset.dom)}</td><td>${escapeHtml(asset.hst)}</td></tr>`).join("")}</tbody></table>${sourceAssets.length > visibleRows.length ? `<div class="empty-preview">Showing first ${visibleRows.length} of ${sourceAssets.length} rows.</div>` : ""}`;
+    };
+
     const formatMonth = date => {
       const month = String(date.getUTCMonth() + 1).padStart(2, "0");
       return `${month}/${date.getUTCFullYear()}`;
@@ -238,6 +263,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     const loadSourceTable = () => {
       sourceAssets = parseCsv(assetInput.value);
       refreshPartSelectors();
+      renderDataPreview();
       serialOptions.innerHTML = "";
       serialNumberInput.value = "";
       statusText.textContent = `${sourceAssets.length} asset${sourceAssets.length === 1 ? "" : "s"} loaded for lookup.`;
@@ -347,7 +373,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       document.querySelectorAll("[data-route]").forEach(tab => tab.classList.toggle("active", tab.dataset.route === routeId));
     };
     document.querySelectorAll("[data-route]").forEach(tab => tab.addEventListener("click", () => setRoute(tab.dataset.route)));
-    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; refreshPartSelectors(); serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; setStatus("Data cleared. Saved templates remain available."); });
+    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; refreshPartSelectors(); renderDataPreview(); serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; setStatus("Data cleared. Saved templates remain available."); });
     document.querySelector("#saveTemplateBtn").addEventListener("click", () => { if (!templatePartSelect.value) return setStatus("Select a template part number first."); templatesByPart[templatePartSelect.value] = templateInput.value; localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesByPart)); setStatus(`Template saved for ${templatePartSelect.value}.`); });
     document.querySelector("#loadTemplateBtn").addEventListener("click", () => { templatesByPart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); templateInput.value = templateForPart(templatePartSelect.value); setStatus("Saved templates loaded."); });
     document.querySelector("#addPartNumberBtn").addEventListener("click", () => {
