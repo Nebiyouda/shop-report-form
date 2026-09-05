@@ -27,12 +27,11 @@
     <header class="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-slate-300 pb-4">
       <div>
         <p class="label">ENG360 / Engineering Suite v1.1</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900">Asset Release</h1>
-        <p class="mt-1 text-sm font-semibold text-slate-600">Generate cylinder release comments from controlled DOM and HST data.</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900">Comment Generator</h1>
+        <p class="mt-1 text-sm font-semibold text-slate-600">Select an asset and generate a controlled release comment.</p>
       </div>
       <div class="flex gap-2 no-print">
-        <button class="btn btn-secondary" id="loadTemplateBtn" type="button">Load Template</button>
-        <button class="btn btn-secondary" id="saveTemplateBtn" type="button">Save Template</button>
+        <button class="btn btn-secondary" id="templatesBtn" type="button">Templates</button>
         <button class="btn btn-primary" id="printBtn" type="button">Print</button>
       </div>
     </header>
@@ -42,7 +41,7 @@
         <section class="panel p-4">
           <div class="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h2 class="font-black text-slate-900">Ingest asset table</h2>
+              <h2 class="font-black text-slate-900">Asset data source</h2>
               <p class="text-xs font-semibold text-slate-500">CSV columns: part number, serial number, DOM, HST</p>
             </div>
             <label class="btn btn-secondary cursor-pointer no-print">Choose CSV<input class="hidden" id="csvFile" type="file" accept=".csv,text/csv" /></label>
@@ -71,10 +70,15 @@
           </div>
         </section>
 
-        <section class="panel p-4">
+        <section class="panel p-4 hidden" id="templatePanel">
           <div class="mb-3">
             <h2 class="font-black text-slate-900">Editable comment template</h2>
             <p class="text-xs font-semibold text-slate-500">Use placeholders: {{partNumber}}, {{serialNumber}}, {{dom}}, {{hst}}, {{lifeExpiry}}, {{nextHst}}, {{nextMaintenanceDue}}.</p>
+          </div>
+          <div class="mb-3 flex gap-2 no-print">
+            <button class="btn btn-secondary" id="loadTemplateBtn" type="button">Load saved</button>
+            <button class="btn btn-secondary" id="saveTemplateBtn" type="button">Save template</button>
+            <button class="btn btn-secondary" id="resetTemplateBtn" type="button">Reset</button>
           </div>
           <textarea class="input min-h-[390px] font-mono text-xs" id="templateInput" spellcheck="false">CYLINDER {{serialNumber}} INSPECTED, TESTED AND REFILLED WITH MIL-PRF-27210J AVIATOR'S BREATHING OXYGEN TYPE I OXYGEN GAS AS PER CMM 35-35-52, REV :06, DATED: 08/08/2024, SUB TASK 35-35-52-440-005-A01.
 MASK ASSEMBLY REPLACED, MASK EXPIRY: 01/04/2032.
@@ -111,6 +115,8 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     const partNumberSelect = document.querySelector("#partNumberSelect");
     const serialNumberInput = document.querySelector("#serialNumberInput");
     const serialOptions = document.querySelector("#serialOptions");
+    const templatePanel = document.querySelector("#templatePanel");
+    const defaultTemplate = templateInput.value;
     let generatedComments = [];
     let sourceAssets = [];
 
@@ -236,9 +242,14 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       event.target.value = "";
     });
 
+    document.querySelector("#templatesBtn").addEventListener("click", () => {
+      templatePanel.classList.toggle("hidden");
+      statusText.textContent = templatePanel.classList.contains("hidden") ? "Template menu closed." : "Template menu open.";
+    });
     document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; partNumberSelect.innerHTML = "<option value=\"\">Load the table first</option>"; serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; statusText.textContent = "Cleared."; });
     document.querySelector("#saveTemplateBtn").addEventListener("click", () => { localStorage.setItem(STORAGE_KEY, templateInput.value); statusText.textContent = "Template saved."; });
     document.querySelector("#loadTemplateBtn").addEventListener("click", () => { templateInput.value = localStorage.getItem(STORAGE_KEY) || templateInput.value; statusText.textContent = "Template loaded."; });
+    document.querySelector("#resetTemplateBtn").addEventListener("click", () => { templateInput.value = defaultTemplate; if (generatedComments.length) renderResults(generatedComments.map(item => item.asset)); statusText.textContent = "Template reset."; });
     document.querySelector("#printBtn").addEventListener("click", () => window.print());
     document.querySelector("#copyBtn").addEventListener("click", async () => { await navigator.clipboard.writeText(generatedComments.map(item => item.comment).join("\n\n")); statusText.textContent = "All comments copied."; });
     results.addEventListener("click", async event => { const index = event.target.dataset.copy; if (index === undefined) return; await navigator.clipboard.writeText(generatedComments[index].comment); statusText.textContent = "Comment copied."; });
