@@ -27,6 +27,9 @@
     .data-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
     .data-preview th { position: sticky; top: 0; background: #e2e8f0; color: #334155; font-size: 10px; letter-spacing: .05em; text-align: left; text-transform: uppercase; }
     .data-preview th, .data-preview td { border-bottom: 1px solid #e2e8f0; padding: 9px 10px; white-space: nowrap; }
+    .data-preview th { min-width: 170px; }
+    .filter-input { display: block; width: 100%; margin-top: 5px; border: 1px solid #94a3b8; border-radius: 4px; background: white; padding: 5px 6px; color: #0f172a; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+    .filter-input:focus { border-color: var(--blue); outline: 2px solid rgba(41, 73, 109, .15); }
     .data-preview tr:nth-child(even) td { background: #f8fafc; }
     .empty-preview { color: #64748b; font-size: 12px; font-weight: 700; padding: 18px; text-align: center; }
     .release-comment { min-height: 260px; white-space: pre-wrap; font-family: Consolas, monospace; font-size: 13px; line-height: 1.55; }
@@ -203,6 +206,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
         };
     let generatedComments = [];
     let sourceAssets = [];
+    const previewFilters = { partNumber: "", serialNumber: "", dom: "", hst: "" };
         let templatesByPart = { ...builtInTemplates, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
 
     const refreshPartSelectors = () => {
@@ -220,13 +224,15 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     };
 
     const renderDataPreview = () => {
-      previewCount.textContent = `${sourceAssets.length} row${sourceAssets.length === 1 ? "" : "s"}`;
+      const filteredRows = sourceAssets.filter(asset => Object.entries(previewFilters).every(([key, filter]) => String(asset[key] || "").toLowerCase().includes(filter.toLowerCase())));
+      previewCount.textContent = `${filteredRows.length} of ${sourceAssets.length} row${sourceAssets.length === 1 ? "" : "s"}`;
       if (!sourceAssets.length) {
         dataPreview.innerHTML = `<div class="empty-preview">Load an Excel or CSV file to preview its rows.</div>`;
         return;
       }
-      const visibleRows = sourceAssets.slice(0, 500);
-      dataPreview.innerHTML = `<table><thead><tr><th>Part Number</th><th>Serial Number</th><th>DOM</th><th>HST</th></tr></thead><tbody>${visibleRows.map(asset => `<tr><td>${escapeHtml(asset.partNumber)}</td><td>${escapeHtml(asset.serialNumber)}</td><td>${escapeHtml(asset.dom)}</td><td>${escapeHtml(asset.hst)}</td></tr>`).join("")}</tbody></table>${sourceAssets.length > visibleRows.length ? `<div class="empty-preview">Showing first ${visibleRows.length} of ${sourceAssets.length} rows.</div>` : ""}`;
+      const visibleRows = filteredRows.slice(0, 500);
+      const header = (key, label) => `<th>${label}<input class="filter-input" data-preview-filter="${key}" value="${escapeHtml(previewFilters[key])}" placeholder="Filter..." /></th>`;
+      dataPreview.innerHTML = `<table><thead><tr>${header("partNumber", "Part Number")}${header("serialNumber", "Serial Number")}${header("dom", "DOM")}${header("hst", "HST")}</tr></thead><tbody>${visibleRows.map(asset => `<tr><td>${escapeHtml(asset.partNumber)}</td><td>${escapeHtml(asset.serialNumber)}</td><td>${escapeHtml(asset.dom)}</td><td>${escapeHtml(asset.hst)}</td></tr>`).join("")}</tbody></table>${!visibleRows.length ? `<div class="empty-preview">No matching rows.</div>` : filteredRows.length > visibleRows.length ? `<div class="empty-preview">Showing first ${visibleRows.length} of ${filteredRows.length} matching rows.</div>` : ""}`;
     };
 
     const formatMonth = date => {
@@ -262,6 +268,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
 
     const loadSourceTable = () => {
       sourceAssets = parseCsv(assetInput.value);
+      Object.keys(previewFilters).forEach(key => { previewFilters[key] = ""; });
       refreshPartSelectors();
       renderDataPreview();
       serialOptions.innerHTML = "";
@@ -367,13 +374,23 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       }
     });
 
+    dataPreview.addEventListener("input", event => {
+      const key = event.target.dataset.previewFilter;
+      if (!key) return;
+      previewFilters[key] = event.target.value;
+      renderDataPreview();
+      const nextInput = dataPreview.querySelector(`[data-preview-filter="${key}"]`);
+      nextInput.focus();
+      nextInput.setSelectionRange(nextInput.value.length, nextInput.value.length);
+    });
+
     const setStatus = message => { statusText.textContent = message; commentStatus.textContent = message; };
     const setRoute = routeId => {
       document.querySelectorAll(".route-view").forEach(view => view.classList.toggle("hidden", view.id !== routeId));
       document.querySelectorAll("[data-route]").forEach(tab => tab.classList.toggle("active", tab.dataset.route === routeId));
     };
     document.querySelectorAll("[data-route]").forEach(tab => tab.addEventListener("click", () => setRoute(tab.dataset.route)));
-    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; refreshPartSelectors(); renderDataPreview(); serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; setStatus("Data cleared. Saved templates remain available."); });
+    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; Object.keys(previewFilters).forEach(key => { previewFilters[key] = ""; }); refreshPartSelectors(); renderDataPreview(); serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; setStatus("Data cleared. Saved templates remain available."); });
     document.querySelector("#saveTemplateBtn").addEventListener("click", () => { if (!templatePartSelect.value) return setStatus("Select a template part number first."); templatesByPart[templatePartSelect.value] = templateInput.value; localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesByPart)); setStatus(`Template saved for ${templatePartSelect.value}.`); });
     document.querySelector("#loadTemplateBtn").addEventListener("click", () => { templatesByPart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); templateInput.value = templateForPart(templatePartSelect.value); setStatus("Saved templates loaded."); });
     document.querySelector("#addPartNumberBtn").addEventListener("click", () => {
