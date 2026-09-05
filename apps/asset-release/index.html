@@ -274,6 +274,7 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       return rows.slice(1).map(row => ({ partNumber: row[partIndex] || "", serialNumber: row[serialIndex] || "", dom: row[domIndex] || "", hst: row[hstIndex] || "" })).filter(row => row.partNumber || row.serialNumber);
     };
 
+    const identifierKey = value => String(value || "").normalize("NFKC").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     const compareText = (left, right) => String(left || "").trim().toUpperCase().localeCompare(String(right || "").trim().toUpperCase());
     const normalizeAndSortAssets = assets => assets.map(asset => ({
       ...asset,
@@ -294,14 +295,17 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     };
 
     const updateSerialOptions = () => {
-      const matches = sourceAssets.filter(asset => asset.partNumber === partNumberSelect.value);
+      const selectedPart = identifierKey(partNumberSelect.value);
+      const matches = sourceAssets.filter(asset => identifierKey(asset.partNumber) === selectedPart);
       serialOptions.innerHTML = matches.map(asset => `<option value="${escapeHtml(asset.serialNumber)}">`).join("");
       if (matches.length === 1) serialNumberInput.value = matches[0].serialNumber;
     };
 
     const selectAssetPart = partNumber => {
-      partNumberSelect.value = partNumber;
-      templatePartSelect.value = partNumber;
+      const partOption = [...partNumberSelect.options].find(option => identifierKey(option.value) === identifierKey(partNumber));
+      const templateOption = [...templatePartSelect.options].find(option => identifierKey(option.value) === identifierKey(partNumber));
+      partNumberSelect.value = partOption?.value || partNumber;
+      templatePartSelect.value = templateOption?.value || partNumber;
       templateInput.value = templateForPart(partNumber);
     };
 
@@ -309,11 +313,11 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       const partNumber = partNumberSelect.value.trim();
       const serialNumber = serialNumberInput.value.trim();
       if (!serialNumber) throw new Error("Insert a serial number first.");
-      const serialMatches = sourceAssets.filter(item => item.serialNumber.trim().toUpperCase() === serialNumber.toUpperCase());
+      const serialMatches = sourceAssets.filter(item => identifierKey(item.serialNumber) === identifierKey(serialNumber));
       if (!serialMatches.length) throw new Error(`No asset found for serial number ${serialNumber}.`);
       if (!partNumber && serialMatches.length > 1) throw new Error(`Serial ${serialNumber} belongs to multiple P/Ns. Select the P/N first.`);
       const asset = partNumber
-        ? serialMatches.find(item => item.partNumber === partNumber)
+        ? serialMatches.find(item => identifierKey(item.partNumber) === identifierKey(partNumber))
         : serialMatches[0];
       if (!asset) throw new Error(`No matching asset for ${partNumber} / ${serialNumber}.`);
       selectAssetPart(asset.partNumber);
@@ -360,9 +364,9 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     });
 
     serialNumberInput.addEventListener("input", () => {
-      const serialNumber = serialNumberInput.value.trim().toUpperCase();
+      const serialNumber = identifierKey(serialNumberInput.value);
       if (!serialNumber) return;
-      const matches = sourceAssets.filter(asset => asset.serialNumber.trim().toUpperCase() === serialNumber);
+      const matches = sourceAssets.filter(asset => identifierKey(asset.serialNumber) === serialNumber);
       if (matches.length === 1) selectAssetPart(matches[0].partNumber);
     });
 
