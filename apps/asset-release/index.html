@@ -18,6 +18,10 @@
     .btn-secondary { border-color: #cbd5e1; background: white; color: #1e293b; }
     .btn-green { background: var(--green-dark); color: white; }
     .status { min-height: 20px; color: #64748b; font-size: 12px; font-weight: 700; }
+    .route-tabs { display: flex; gap: 4px; border-bottom: 1px solid #cbd5e1; }
+    .route-tab { border-bottom: 3px solid transparent; color: #64748b; padding: 10px 14px; font-size: 12px; font-weight: 900; }
+    .route-tab.active { border-color: var(--blue); color: var(--blue); }
+    .route-view.hidden { display: none; }
     .release-comment { min-height: 260px; white-space: pre-wrap; font-family: Consolas, monospace; font-size: 13px; line-height: 1.55; }
     @media print { .no-print { display: none !important; } body { background: white; } .panel { box-shadow: none; } }
   </style>
@@ -30,57 +34,50 @@
         <h1 class="mt-1 text-2xl font-black text-slate-900">Comment Generator</h1>
         <p class="mt-1 text-sm font-semibold text-slate-600">Select an asset and generate a controlled release comment.</p>
       </div>
-      <div class="flex gap-2 no-print">
-        <button class="btn btn-secondary" id="templatesBtn" type="button">Templates</button>
-        <button class="btn btn-primary" id="printBtn" type="button">Print</button>
-      </div>
+      <button class="btn btn-primary no-print" id="printBtn" type="button">Print</button>
     </header>
 
-    <section class="grid gap-5 xl:grid-cols-[minmax(430px,560px)_1fr]">
-      <div class="space-y-5">
-        <section class="panel p-4">
-          <div class="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="font-black text-slate-900">Asset data source</h2>
-              <p class="text-xs font-semibold text-slate-500">CSV columns: part number, serial number, DOM, HST</p>
-            </div>
-            <label class="btn btn-secondary cursor-pointer no-print">Choose CSV<input class="hidden" id="csvFile" type="file" accept=".csv,text/csv" /></label>
-          </div>
-          <textarea class="input min-h-[150px] font-mono text-xs" id="assetInput" spellcheck="false">part number,serial number,DOM,HST
-804044-15,C24020041,12/2024,12/2024</textarea>
-          <div class="mt-4 grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
-            <label class="space-y-1">
-              <span class="label">Select Part Number</span>
-              <select class="input" id="partNumberSelect">
-                <option value="">Load the table first</option>
-              </select>
-            </label>
-            <label class="space-y-1">
-              <span class="label">Insert Serial Number</span>
-              <input class="input" id="serialNumberInput" list="serialOptions" placeholder="Enter serial number" autocomplete="off" />
-              <datalist id="serialOptions"></datalist>
-            </label>
-          </div>
-          <div class="mt-3 flex flex-wrap items-center gap-2 no-print">
-            <button class="btn btn-secondary" id="loadTableBtn" type="button">Load table</button>
-            <button class="btn btn-green" id="generateSelectedBtn" type="button">Generate selected comment</button>
-            <button class="btn btn-primary" id="generateBtn" type="button">Generate all</button>
-            <button class="btn btn-secondary" id="clearBtn" type="button">Clear</button>
-            <span class="status" id="statusText"></span>
-          </div>
-        </section>
+    <nav class="route-tabs mb-5 no-print" aria-label="Asset release routes">
+      <button class="route-tab active" type="button" data-route="commentView">Comment</button>
+      <button class="route-tab" type="button" data-route="dataView">Data</button>
+      <button class="route-tab" type="button" data-route="templateView">Template</button>
+    </nav>
 
-        <section class="panel p-4 hidden" id="templatePanel">
-          <div class="mb-3">
-            <h2 class="font-black text-slate-900">Editable comment template</h2>
-            <p class="text-xs font-semibold text-slate-500">Use placeholders: {{partNumber}}, {{serialNumber}}, {{dom}}, {{hst}}, {{lifeExpiry}}, {{nextHst}}, {{nextMaintenanceDue}}.</p>
+    <section id="dataView" class="route-view hidden">
+      <section class="panel p-4">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="font-black text-slate-900">Asset data source</h2>
+            <p class="text-xs font-semibold text-slate-500">CSV columns: part number, serial number, DOM, HST</p>
           </div>
-          <div class="mb-3 flex gap-2 no-print">
-            <button class="btn btn-secondary" id="loadTemplateBtn" type="button">Load saved</button>
-            <button class="btn btn-secondary" id="saveTemplateBtn" type="button">Save template</button>
-            <button class="btn btn-secondary" id="resetTemplateBtn" type="button">Reset</button>
-          </div>
-          <textarea class="input min-h-[390px] font-mono text-xs" id="templateInput" spellcheck="false">CYLINDER {{serialNumber}} INSPECTED, TESTED AND REFILLED WITH MIL-PRF-27210J AVIATOR'S BREATHING OXYGEN TYPE I OXYGEN GAS AS PER CMM 35-35-52, REV :06, DATED: 08/08/2024, SUB TASK 35-35-52-440-005-A01.
+          <label class="btn btn-secondary cursor-pointer no-print">Choose CSV<input class="hidden" id="csvFile" type="file" accept=".csv,text/csv" /></label>
+        </div>
+        <textarea class="input min-h-[220px] font-mono text-xs" id="assetInput" spellcheck="false">part number,serial number,DOM,HST
+804044-15,C24020041,12/2024,12/2024</textarea>
+        <div class="mt-3 flex flex-wrap items-center gap-2 no-print">
+          <button class="btn btn-green" id="loadTableBtn" type="button">Load data</button>
+          <button class="btn btn-secondary" id="clearBtn" type="button">Clear</button>
+          <span class="status" id="statusText"></span>
+        </div>
+      </section>
+    </section>
+
+    <section id="templateView" class="route-view hidden">
+      <section class="panel p-4" id="templatePanel">
+        <div class="mb-3">
+          <h2 class="font-black text-slate-900">Part-number templates</h2>
+          <p class="text-xs font-semibold text-slate-500">Each part number has its own comment. Only DOM, HST, life, and maintenance dates are fetched from Data.</p>
+        </div>
+        <div class="mb-3 flex gap-2 no-print">
+          <button class="btn btn-secondary" id="loadTemplateBtn" type="button">Load saved</button>
+          <button class="btn btn-secondary" id="saveTemplateBtn" type="button">Save template</button>
+          <button class="btn btn-secondary" id="resetTemplateBtn" type="button">Reset</button>
+        </div>
+        <label class="mb-3 block space-y-1">
+          <span class="label">Template part number</span>
+          <select class="input" id="templatePartSelect"><option value="">Select P/N</option></select>
+        </label>
+        <textarea class="input min-h-[390px] font-mono text-xs" id="templateInput" spellcheck="false">CYLINDER INSPECTED, TESTED AND REFILLED WITH MIL-PRF-27210J AVIATOR'S BREATHING OXYGEN TYPE I OXYGEN GAS AS PER CMM 35-35-52, REV :06, DATED: 08/08/2024, SUB TASK 35-35-52-440-005-A01.
 MASK ASSEMBLY REPLACED, MASK EXPIRY: 01/04/2032.
 CYLINDER INITIAL HST/DOM: {{hst}} / {{dom}}.
 CYLINDER FINITE LIFE: {{lifeExpiry}}.
@@ -89,13 +86,36 @@ NEXT HST/OVH DATE: {{nextHst}}.
 CYLINDER DOM VERIFIED AND UPDATED AS PER TN35-016/TN35-002/TN35-007.
 PURITY CERTIFICATE NO: GIGC/QC/GAS/SG4275.
 NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
-        </section>
-      </div>
+      </section>
+    </section>
 
+    <section id="commentView" class="route-view grid gap-5 xl:grid-cols-[minmax(430px,560px)_1fr]">
+      <section class="panel p-4">
+        <div class="mb-3">
+          <h2 class="font-black text-slate-900">Select asset</h2>
+          <p class="text-xs font-semibold text-slate-500">Choose a P/N and enter its serial number. DOM and HST are fetched from Data.</p>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="space-y-1">
+            <span class="label">Part number</span>
+            <select class="input" id="partNumberSelect"><option value="">Load data first</option></select>
+          </label>
+          <label class="space-y-1">
+            <span class="label">Serial number</span>
+            <input class="input" id="serialNumberInput" list="serialOptions" placeholder="Enter serial number" autocomplete="off" />
+            <datalist id="serialOptions"></datalist>
+          </label>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-2 no-print">
+          <button class="btn btn-green" id="generateSelectedBtn" type="button">Generate comment</button>
+          <button class="btn btn-primary" id="generateBtn" type="button">Generate all</button>
+          <span class="status" id="commentStatus"></span>
+        </div>
+      </section>
       <section class="panel p-4">
         <div class="mb-3 flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
           <div>
-            <h2 class="font-black text-slate-900">Generated release comments</h2>
+            <h2 class="font-black text-slate-900">Generated comments</h2>
             <p class="text-xs font-semibold text-slate-500" id="resultSummary">No assets generated yet.</p>
           </div>
           <button class="btn btn-secondary no-print" id="copyBtn" type="button">Copy All</button>
@@ -115,10 +135,13 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     const partNumberSelect = document.querySelector("#partNumberSelect");
     const serialNumberInput = document.querySelector("#serialNumberInput");
     const serialOptions = document.querySelector("#serialOptions");
+    const templatePartSelect = document.querySelector("#templatePartSelect");
+    const commentStatus = document.querySelector("#commentStatus");
     const templatePanel = document.querySelector("#templatePanel");
     const defaultTemplate = templateInput.value;
     let generatedComments = [];
     let sourceAssets = [];
+    let templatesByPart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
     const formatMonth = date => {
       const month = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -157,6 +180,9 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       partNumberSelect.innerHTML = partNumbers.length
         ? `<option value="">Select P/N</option>${partNumbers.map(partNumber => `<option value="${escapeHtml(partNumber)}">${escapeHtml(partNumber)}</option>`).join("")}`
         : `<option value="">No part numbers found</option>`;
+      templatePartSelect.innerHTML = partNumbers.length
+        ? `<option value="">Select P/N</option>${partNumbers.map(partNumber => `<option value="${escapeHtml(partNumber)}">${escapeHtml(partNumber)}</option>`).join("")}`
+        : `<option value="">Load data first</option>`;
       serialOptions.innerHTML = "";
       serialNumberInput.value = "";
       statusText.textContent = `${sourceAssets.length} asset${sourceAssets.length === 1 ? "" : "s"} loaded for lookup.`;
@@ -188,10 +214,12 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       return { ...row, dom: formatMonth(domDate), hst: formatMonth(hstDate), lifeExpiry: formatMonth(lifeExpiryDate), nextHst: formatMonth(nextHstDate), nextMaintenanceDue: formatDueDate(nextMaintenanceDate) };
     };
 
-    const renderTemplate = (template, asset) => template.replace(/{{\s*(\w+)\s*}}/g, (_, key) => asset[key] || "");
+    const templateForPart = partNumber => templatesByPart[partNumber] || defaultTemplate;
+    const datePlaceholders = new Set(["dom", "hst", "lifeExpiry", "nextHst", "nextMaintenanceDue"]);
+    const renderTemplate = (template, asset) => template.replace(/{{\s*(\w+)\s*}}/g, (match, key) => datePlaceholders.has(key) ? asset[key] || "" : match);
 
     const renderResults = assets => {
-      generatedComments = assets.map(asset => ({ asset, comment: renderTemplate(templateInput.value, asset) }));
+      generatedComments = assets.map(asset => ({ asset, comment: renderTemplate(asset.partNumber === templatePartSelect.value ? templateInput.value : templateForPart(asset.partNumber), asset) }));
       results.innerHTML = generatedComments.map(({ asset, comment }, index) => `<article class="border border-slate-300 bg-slate-50 p-4"><div class="mb-2 flex items-center justify-between gap-2"><div><div class="text-xs font-black uppercase tracking-wide text-slate-500">Asset ${index + 1}</div><div class="font-black text-slate-900">${escapeHtml(asset.partNumber)} / ${escapeHtml(asset.serialNumber)}</div></div><button class="btn btn-secondary no-print" data-copy="${index}" type="button">Copy</button></div><div class="mb-3 grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-3"><span>DOM: ${asset.dom}</span><span>Life expiry: ${asset.lifeExpiry}</span><span>Next maintenance: ${asset.nextMaintenanceDue}</span></div><textarea class="input release-comment" readonly>${escapeHtml(comment)}</textarea></article>`).join("");
       resultSummary.textContent = `${assets.length} asset${assets.length === 1 ? "" : "s"} generated. Maintenance due uses the earlier of DOM + 15 years and HST + 5 years.`;
     };
@@ -206,14 +234,22 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       }
     });
 
-    partNumberSelect.addEventListener("change", updateSerialOptions);
+    partNumberSelect.addEventListener("change", () => {
+      updateSerialOptions();
+      templatePartSelect.value = partNumberSelect.value;
+      templateInput.value = templateForPart(partNumberSelect.value);
+    });
+
+    templatePartSelect.addEventListener("change", () => {
+      templateInput.value = templateForPart(templatePartSelect.value);
+    });
 
     document.querySelector("#generateSelectedBtn").addEventListener("click", () => {
       try {
         renderResults([findSelectedAsset()]);
-        statusText.textContent = "Selected asset generated successfully.";
+        setStatus("Selected asset generated successfully.");
       } catch (error) {
-        statusText.textContent = error.message;
+        setStatus(error.message);
         results.innerHTML = "";
         resultSummary.textContent = "Select a matching part number and serial number.";
       }
@@ -225,9 +261,9 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
         const assets = sourceAssets.map(makeAsset);
         if (!assets.length) throw new Error("Add at least one asset row.");
         renderResults(assets);
-        statusText.textContent = "Generated successfully.";
+        setStatus("Generated successfully.");
       } catch (error) {
-        statusText.textContent = error.message;
+        setStatus(error.message);
         results.innerHTML = "";
         resultSummary.textContent = "Generation needs valid asset data.";
       }
@@ -237,22 +273,24 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       const file = event.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => { assetInput.value = reader.result; loadSourceTable(); statusText.textContent = `${file.name} loaded.`; };
+      reader.onload = () => { assetInput.value = reader.result; loadSourceTable(); setStatus(`${file.name} loaded.`); };
       reader.readAsText(file);
       event.target.value = "";
     });
 
-    document.querySelector("#templatesBtn").addEventListener("click", () => {
-      templatePanel.classList.toggle("hidden");
-      statusText.textContent = templatePanel.classList.contains("hidden") ? "Template menu closed." : "Template menu open.";
-    });
-    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; partNumberSelect.innerHTML = "<option value=\"\">Load the table first</option>"; serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; statusText.textContent = "Cleared."; });
-    document.querySelector("#saveTemplateBtn").addEventListener("click", () => { localStorage.setItem(STORAGE_KEY, templateInput.value); statusText.textContent = "Template saved."; });
-    document.querySelector("#loadTemplateBtn").addEventListener("click", () => { templateInput.value = localStorage.getItem(STORAGE_KEY) || templateInput.value; statusText.textContent = "Template loaded."; });
-    document.querySelector("#resetTemplateBtn").addEventListener("click", () => { templateInput.value = defaultTemplate; if (generatedComments.length) renderResults(generatedComments.map(item => item.asset)); statusText.textContent = "Template reset."; });
+    const setStatus = message => { statusText.textContent = message; commentStatus.textContent = message; };
+    const setRoute = routeId => {
+      document.querySelectorAll(".route-view").forEach(view => view.classList.toggle("hidden", view.id !== routeId));
+      document.querySelectorAll("[data-route]").forEach(tab => tab.classList.toggle("active", tab.dataset.route === routeId));
+    };
+    document.querySelectorAll("[data-route]").forEach(tab => tab.addEventListener("click", () => setRoute(tab.dataset.route)));
+    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; partNumberSelect.innerHTML = "<option value=\"\">Load data first</option>"; templatePartSelect.innerHTML = "<option value=\"\">Load data first</option>"; serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; setStatus("Cleared."); });
+    document.querySelector("#saveTemplateBtn").addEventListener("click", () => { if (!templatePartSelect.value) return setStatus("Select a template part number first."); templatesByPart[templatePartSelect.value] = templateInput.value; localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesByPart)); setStatus(`Template saved for ${templatePartSelect.value}.`); });
+    document.querySelector("#loadTemplateBtn").addEventListener("click", () => { templatesByPart = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); templateInput.value = templateForPart(templatePartSelect.value); setStatus("Saved templates loaded."); });
+    document.querySelector("#resetTemplateBtn").addEventListener("click", () => { templateInput.value = defaultTemplate; if (templatePartSelect.value) { templatesByPart[templatePartSelect.value] = defaultTemplate; localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesByPart)); } if (generatedComments.length) renderResults(generatedComments.map(item => item.asset)); setStatus("Template reset."); });
     document.querySelector("#printBtn").addEventListener("click", () => window.print());
-    document.querySelector("#copyBtn").addEventListener("click", async () => { await navigator.clipboard.writeText(generatedComments.map(item => item.comment).join("\n\n")); statusText.textContent = "All comments copied."; });
-    results.addEventListener("click", async event => { const index = event.target.dataset.copy; if (index === undefined) return; await navigator.clipboard.writeText(generatedComments[index].comment); statusText.textContent = "Comment copied."; });
+    document.querySelector("#copyBtn").addEventListener("click", async () => { await navigator.clipboard.writeText(generatedComments.map(item => item.comment).join("\n\n")); setStatus("All comments copied."); });
+    results.addEventListener("click", async event => { const index = event.target.dataset.copy; if (index === undefined) return; await navigator.clipboard.writeText(generatedComments[index].comment); setStatus("Comment copied."); });
     templateInput.addEventListener("input", () => { if (generatedComments.length) renderResults(generatedComments.map(item => item.asset)); });
     document.querySelector("#loadTableBtn").click();
     document.querySelector("#generateSelectedBtn").click();
