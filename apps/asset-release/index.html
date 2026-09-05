@@ -248,10 +248,24 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
         const excelDate = window.XLSX.SSF.parse_date_code(value);
         if (excelDate?.y && excelDate?.m) return new Date(Date.UTC(excelDate.y, excelDate.m - 1, 1));
       }
+      const numericDate = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+      if (numericDate) {
+        const year = Number(numericDate[3]) < 100 ? 2000 + Number(numericDate[3]) : Number(numericDate[3]);
+        const first = Number(numericDate[1]);
+        const second = Number(numericDate[2]);
+        const month = first >= 1 && first <= 12 ? first : second;
+        if (month >= 1 && month <= 12 && year >= 1900) return new Date(Date.UTC(year, month - 1, 1));
+      }
       const isoDate = text.match(/^(\d{4})[-/.](\d{1,2})(?:[-/.]\d{1,2})?/);
       if (isoDate) return new Date(Date.UTC(Number(isoDate[1]), Number(isoDate[2]) - 1, 1));
-      const fullDate = text.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
-      if (fullDate) return new Date(Date.UTC(Number(fullDate[3]), Number(fullDate[2]) - 1, 1));
+      const fullDate = text.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+      if (fullDate) {
+        const year = Number(fullDate[3]) < 100 ? 2000 + Number(fullDate[3]) : Number(fullDate[3]);
+        const first = Number(fullDate[1]);
+        const second = Number(fullDate[2]);
+        const month = first >= 1 && first <= 12 ? first : second;
+        if (month >= 1 && month <= 12) return new Date(Date.UTC(year, month - 1, 1));
+      }
       const match = text.match(/^(\d{1,2})[\/-](\d{4})$/) || text.match(/^(\d{4})[\/-](\d{1,2})$/);
       if (!match) return null;
       const year = match[2].length === 4 ? Number(match[2]) : Number(match[1]);
