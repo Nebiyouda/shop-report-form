@@ -390,8 +390,9 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
 
     document.querySelector("#generateSelectedBtn").addEventListener("click", () => {
       try {
-        renderResults([findSelectedAsset()]);
-        setStatus("Selected asset generated successfully.");
+        const asset = findSelectedAsset();
+        renderResults([asset]);
+        setStatus(`P/N ${asset.partNumber} / S/N ${asset.serialNumber} comment generated successfully.`);
       } catch (error) {
         setStatus(error.message);
         results.innerHTML = "";
