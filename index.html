@@ -100,6 +100,28 @@
     @media print {
       .no-print { display: none !important; }
     }
+    @media (max-width: 768px) {
+      #appShell { flex-direction: column; }
+      .sidebar,
+      .sidebar-collapsed .sidebar {
+        width: 100%;
+        flex: 0 0 auto;
+        min-height: auto;
+      }
+      .sidebar-collapsed .sidebar {
+        height: 4.75rem;
+        overflow: hidden;
+      }
+      .sidebar nav { max-height: 9rem; overflow-y: auto; }
+      .sidebar-collapsed .sidebar nav { display: none; }
+      .sidebar-collapsed .sidebar > div:last-child { display: none; }
+      main { min-height: calc(100vh - 4.75rem); }
+      main > header { padding-left: 1rem; padding-right: 1rem; }
+      #contentArea { min-height: calc(100vh - 8.5rem); overflow: auto; }
+      #dashboard { position: relative; min-height: 100%; padding: 1rem; }
+      #appGrid { grid-template-columns: 1fr; }
+      iframe.app-frame { height: calc(100vh - 8.5rem); min-height: 620px; }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-950">
