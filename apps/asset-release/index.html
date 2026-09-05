@@ -49,8 +49,23 @@
           </div>
           <textarea class="input min-h-[150px] font-mono text-xs" id="assetInput" spellcheck="false">part number,serial number,DOM,HST
 804044-15,C24020041,12/2024,12/2024</textarea>
+          <div class="mt-4 grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
+            <label class="space-y-1">
+              <span class="label">Select Part Number</span>
+              <select class="input" id="partNumberSelect">
+                <option value="">Load the table first</option>
+              </select>
+            </label>
+            <label class="space-y-1">
+              <span class="label">Insert Serial Number</span>
+              <input class="input" id="serialNumberInput" list="serialOptions" placeholder="Enter serial number" autocomplete="off" />
+              <datalist id="serialOptions"></datalist>
+            </label>
+          </div>
           <div class="mt-3 flex flex-wrap items-center gap-2 no-print">
-            <button class="btn btn-green" id="generateBtn" type="button">Generate release comments</button>
+            <button class="btn btn-secondary" id="loadTableBtn" type="button">Load table</button>
+            <button class="btn btn-green" id="generateSelectedBtn" type="button">Generate selected comment</button>
+            <button class="btn btn-primary" id="generateBtn" type="button">Generate all</button>
             <button class="btn btn-secondary" id="clearBtn" type="button">Clear</button>
             <span class="status" id="statusText"></span>
           </div>
@@ -93,7 +108,11 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
     const results = document.querySelector("#results");
     const statusText = document.querySelector("#statusText");
     const resultSummary = document.querySelector("#resultSummary");
+    const partNumberSelect = document.querySelector("#partNumberSelect");
+    const serialNumberInput = document.querySelector("#serialNumberInput");
+    const serialOptions = document.querySelector("#serialOptions");
     let generatedComments = [];
+    let sourceAssets = [];
 
     const formatMonth = date => {
       const month = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -126,6 +145,33 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       return rows.slice(1).map(row => ({ partNumber: row[partIndex] || "", serialNumber: row[serialIndex] || "", dom: row[domIndex] || "", hst: row[hstIndex] || "" })).filter(row => row.partNumber || row.serialNumber);
     };
 
+    const loadSourceTable = () => {
+      sourceAssets = parseCsv(assetInput.value);
+      const partNumbers = [...new Set(sourceAssets.map(asset => asset.partNumber).filter(Boolean))];
+      partNumberSelect.innerHTML = partNumbers.length
+        ? `<option value="">Select P/N</option>${partNumbers.map(partNumber => `<option value="${escapeHtml(partNumber)}">${escapeHtml(partNumber)}</option>`).join("")}`
+        : `<option value="">No part numbers found</option>`;
+      serialOptions.innerHTML = "";
+      serialNumberInput.value = "";
+      statusText.textContent = `${sourceAssets.length} asset${sourceAssets.length === 1 ? "" : "s"} loaded for lookup.`;
+    };
+
+    const updateSerialOptions = () => {
+      const matches = sourceAssets.filter(asset => asset.partNumber === partNumberSelect.value);
+      serialOptions.innerHTML = matches.map(asset => `<option value="${escapeHtml(asset.serialNumber)}">`).join("");
+      if (matches.length === 1) serialNumberInput.value = matches[0].serialNumber;
+    };
+
+    const findSelectedAsset = () => {
+      const partNumber = partNumberSelect.value.trim();
+      const serialNumber = serialNumberInput.value.trim();
+      if (!partNumber) throw new Error("Select a part number first.");
+      if (!serialNumber) throw new Error("Insert a serial number first.");
+      const asset = sourceAssets.find(item => item.partNumber === partNumber && item.serialNumber.toUpperCase() === serialNumber.toUpperCase());
+      if (!asset) throw new Error(`No matching asset for ${partNumber} / ${serialNumber}.`);
+      return makeAsset(asset);
+    };
+
     const makeAsset = row => {
       const domDate = parseMonth(row.dom);
       const hstDate = parseMonth(row.hst);
@@ -146,9 +192,31 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
 
     const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[character]));
 
+    document.querySelector("#loadTableBtn").addEventListener("click", () => {
+      try {
+        loadSourceTable();
+      } catch (error) {
+        statusText.textContent = error.message;
+      }
+    });
+
+    partNumberSelect.addEventListener("change", updateSerialOptions);
+
+    document.querySelector("#generateSelectedBtn").addEventListener("click", () => {
+      try {
+        renderResults([findSelectedAsset()]);
+        statusText.textContent = "Selected asset generated successfully.";
+      } catch (error) {
+        statusText.textContent = error.message;
+        results.innerHTML = "";
+        resultSummary.textContent = "Select a matching part number and serial number.";
+      }
+    });
+
     document.querySelector("#generateBtn").addEventListener("click", () => {
       try {
-        const assets = parseCsv(assetInput.value).map(makeAsset);
+        loadSourceTable();
+        const assets = sourceAssets.map(makeAsset);
         if (!assets.length) throw new Error("Add at least one asset row.");
         renderResults(assets);
         statusText.textContent = "Generated successfully.";
@@ -163,19 +231,20 @@ NEXT MAINTENANCE DUE ON: {{nextMaintenanceDue}}.</textarea>
       const file = event.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => { assetInput.value = reader.result; statusText.textContent = `${file.name} loaded.`; };
+      reader.onload = () => { assetInput.value = reader.result; loadSourceTable(); statusText.textContent = `${file.name} loaded.`; };
       reader.readAsText(file);
       event.target.value = "";
     });
 
-    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; statusText.textContent = "Cleared."; });
+    document.querySelector("#clearBtn").addEventListener("click", () => { assetInput.value = ""; sourceAssets = []; partNumberSelect.innerHTML = "<option value=\"\">Load the table first</option>"; serialOptions.innerHTML = ""; serialNumberInput.value = ""; results.innerHTML = ""; generatedComments = []; resultSummary.textContent = "No assets generated yet."; statusText.textContent = "Cleared."; });
     document.querySelector("#saveTemplateBtn").addEventListener("click", () => { localStorage.setItem(STORAGE_KEY, templateInput.value); statusText.textContent = "Template saved."; });
     document.querySelector("#loadTemplateBtn").addEventListener("click", () => { templateInput.value = localStorage.getItem(STORAGE_KEY) || templateInput.value; statusText.textContent = "Template loaded."; });
     document.querySelector("#printBtn").addEventListener("click", () => window.print());
     document.querySelector("#copyBtn").addEventListener("click", async () => { await navigator.clipboard.writeText(generatedComments.map(item => item.comment).join("\n\n")); statusText.textContent = "All comments copied."; });
     results.addEventListener("click", async event => { const index = event.target.dataset.copy; if (index === undefined) return; await navigator.clipboard.writeText(generatedComments[index].comment); statusText.textContent = "Comment copied."; });
     templateInput.addEventListener("input", () => { if (generatedComments.length) renderResults(generatedComments.map(item => item.asset)); });
-    document.querySelector("#generateBtn").click();
+    document.querySelector("#loadTableBtn").click();
+    document.querySelector("#generateSelectedBtn").click();
   </script>
 </body>
 </html>
